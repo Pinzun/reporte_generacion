@@ -139,18 +139,17 @@ def generar_mapa_regiones(shp_path, target_crs="EPSG:32719"):
 
     return gdf
 
-def graficar_cmg_con_mapa(df_cmg, gdf_reg, bar_points, out_path, dpi=300):
-
-
+def graficar_cmg_con_mapa(df_cmg, gdf_reg, bar_points, out_path, dpi=130):
     df_c = df_cmg.copy()
-    df_c["fecha_version"] = pd.to_datetime(df_c["fecha_version"], errors="coerce")
-    df_c = df_c.sort_values("fecha_version")
+    df_c["fecha_hora"] = pd.to_datetime(df_c["fecha_hora"], errors="coerce")
+    df_c = df_c.dropna(subset=["fecha_hora", "CMG_PESO_KWH", "nombre_cmg"]).copy()
+    df_c = df_c.sort_values("fecha_hora")
 
-    fig, ax = plt.subplots(figsize=(14, 7))
+    # Tamaño compacto pensado para card horizontal
+    fig, ax = plt.subplots(figsize=(7.2, 3.2))
 
-    # Inset del mapa: [left, bottom, width, height] en coords de figura (0..1)
-    # Ajusta estos números si lo quieres más grande/arriba/abajo
-    ax_map = fig.add_axes([0.85, 0.35, 0.26, 0.6])
+    # Inset del mapa más pequeño y menos invasivo
+    ax_map = fig.add_axes([0.9, 0.34, 0.16, 0.6])
     ax_map.grid(False)
 
     # -------------------------
@@ -161,40 +160,38 @@ def graficar_cmg_con_mapa(df_cmg, gdf_reg, bar_points, out_path, dpi=300):
     color_map = dict(zip(barras, palette))
 
     # -------------------------
-    # Lineplot (sin leyenda auto)
+    # Lineplot
     # -------------------------
     sns.lineplot(
         data=df_c,
-        x="fecha_version",
+        x="fecha_hora",
         y="CMG_PESO_KWH",
         hue="nombre_cmg",
         hue_order=barras,
         palette=color_map,
         ax=ax,
-        linewidth=2.5,
+        linewidth=1.8,
         estimator=None,
         legend=False,
     )
 
-    ax.set_title("Costo Marginal promedio por mes ($/kWh)", fontsize=16, fontweight="bold")
-    ax.set_xlabel("Fecha", fontsize=14)
-    ax.set_ylabel("CMG ($/kWh)", fontsize=14)
-    # Grid SOLO en Y (más útil para lectura) — luego lo extendemos a figura
+    ax.set_title("Costo marginal promedio por mes ($/kWh)", fontsize=11, fontweight="bold")
+    ax.set_xlabel("")
+    ax.set_ylabel("CMG ($/kWh)", fontsize=9)
+    ax.tick_params(axis="x", rotation=45, labelsize=8)
+    ax.tick_params(axis="y", labelsize=8)
     ax.grid(False)
     ax.yaxis.grid(True, alpha=0.18, linewidth=0.8)
     ax.xaxis.grid(False)
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
     sns.despine(ax=ax)
 
     # -------------------------
     # Mapa fondo
     # -------------------------
-    # Orden norte -> sur por CUT_REG
     gdf_reg_plot = gdf_reg.sort_values("CUT_REG").reset_index(drop=True)
 
-    # Gradiente pastel naranja -> azul
     PASTEL_ORANGE = "#F6B38E"
-    PASTEL_BLUE   = "#8EC5FF"
+    PASTEL_BLUE = "#8EC5FF"
 
     cmap = LinearSegmentedColormap.from_list(
         "pastel_orange_blue",
@@ -208,12 +205,10 @@ def graficar_cmg_con_mapa(df_cmg, gdf_reg, bar_points, out_path, dpi=300):
         ax=ax_map,
         color=gdf_reg_plot["_color"],
         edgecolor="white",
-        linewidth=0.8,
+        linewidth=0.6,
         zorder=1
     )
-    # -------------------------
-    # Puntos (mismo color que línea)
-    # -------------------------
+
     rows = []
     for b in barras:
         if b in bar_points:
@@ -238,39 +233,38 @@ def graficar_cmg_con_mapa(df_cmg, gdf_reg, bar_points, out_path, dpi=300):
             ax_map.scatter(
                 r.geometry.x,
                 r.geometry.y,
-                s=60,
+                s=28,
                 marker="o",
                 color=color_map[b],
                 edgecolor="white",
-                linewidth=0.8,
+                linewidth=0.6,
                 zorder=5
             )
 
-    # Zoom mapa
     minx, miny, maxx, maxy = gdf_reg.total_bounds
     dx, dy = maxx - minx, maxy - miny
-    ax_map.set_xlim(minx - 0.1*dx, maxx + 0.1*dx)
-    ax_map.set_ylim(miny - 0.03*dy, maxy + 0.03*dy)
+    ax_map.set_xlim(minx - 0.08 * dx, maxx + 0.08 * dx)
+    ax_map.set_ylim(miny - 0.03 * dy, maxy + 0.03 * dy)
     ax_map.set_axis_off()
     ax_map.set_aspect("equal")
-    # Fondo idéntico entre subplots (mejora integración visual)
     ax_map.set_facecolor(ax.get_facecolor())
     ax_map.patch.set_alpha(1.0)
 
     for spine in ax_map.spines.values():
         spine.set_visible(True)
         spine.set_color("#D0D5DD")
-        spine.set_linewidth(0.9)
+        spine.set_linewidth(0.7)
+
     # -------------------------
-    # Leyenda unificada
+    # Leyenda compacta abajo-izquierda
     # -------------------------
     handles = [
         Line2D(
             [0], [0],
             color=color_map[b],
-            linewidth=2.5,
+            linewidth=1.8,
             marker="o",
-            markersize=7,
+            markersize=4.5,
             markerfacecolor=color_map[b],
             markeredgecolor="white",
             label=b
@@ -280,19 +274,424 @@ def graficar_cmg_con_mapa(df_cmg, gdf_reg, bar_points, out_path, dpi=300):
 
     leg = ax.legend(
         handles=handles,
-        title="Nombre barra CMG",
-        loc="upper left",
-        fontsize=12,
-        title_fontsize=14,
-        frameon=True
+        title="Barras CMG",
+        loc="lower left",
+        fontsize=7,
+        title_fontsize=8,
+        frameon=True,
+        ncol=2,
+        borderaxespad=0.6
     )
     leg.get_frame().set_alpha(0.9)
 
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.84, bottom=0.24)
+
     _guardar_fig(fig, out_path, dpi=dpi)
-    plt.close(fig)
+
+def graficar_gx_tipico(df_dia_tipico, out_path, dpi=130):
+    """
+    Grafica el día típico real como áreas apiladas por tecnología.
+    Mantiene separados los BESS en inyección y retiro para evitar neteo.
+    """
+    df = df_dia_tipico.copy()
+
+    if df.empty:
+        fig, ax = plt.subplots(figsize=(7.2, 3.2))
+        ax.text(0.5, 0.5, "Sin datos para día típico", ha="center", va="center", fontsize=11)
+        ax.axis("off")
+        _guardar_fig(fig, out_path, dpi=dpi)
+        return
+
+    df["inyeccion_retiro"] = pd.to_numeric(df["inyeccion_retiro"], errors="coerce")
+    df = df.dropna(subset=["inyeccion_retiro", "tipo"]).copy()
+
+    # Asegurar ejes temporales
+    if "hora_decimal" not in df.columns:
+        if {"hora", "minuto"}.issubset(df.columns):
+            df["hora"] = pd.to_numeric(df["hora"], errors="coerce").fillna(0)
+            df["minuto"] = pd.to_numeric(df["minuto"], errors="coerce").fillna(0)
+            df["hora_decimal"] = df["hora"] + df["minuto"] / 60.0
+        else:
+            df["fecha_hora"] = pd.to_datetime(df["fecha_hora"], errors="coerce")
+            df["hora_decimal"] = df["fecha_hora"].dt.hour + df["fecha_hora"].dt.minute / 60.0
+
+    df["tipo"] = df["tipo"].fillna("Sin clasificar").astype(str).str.strip()
+    df["subtipo"] = df["subtipo"].fillna("-").astype(str).str.strip()
+
+    rename_tipo = {
+        "Eólicas": "Eólica",
+        "Solar": "Solar",
+        "Solares": "Solar",
+        "Hidroeléctrica": "Hidro",
+        "Hidroeléctricas": "Hidro",
+        "Hidro": "Hidro",
+        "Térmica": "Térmica",
+        "Térmicas": "Térmica",
+        "Termica": "Térmica",
+        "Termicas": "Térmica",
+        "Geotérmica": "Geotérmica",
+        "Geotermia": "Geotérmica",
+        "Bess": "BESS",
+        "BESS": "BESS",
+    }
+    df["tipo_plot"] = df["tipo"].replace(rename_tipo)
+
+    # Separar BESS inyección y retiro
+    df["categoria_plot"] = df["tipo_plot"]
+
+    mask_bess = df["tipo_plot"].eq("BESS")
+    mask_retiro = df["subtipo"].str.contains("Retiro", case=False, na=False)
+    mask_iny = df["subtipo"].str.contains("Inye", case=False, na=False)
+
+    df.loc[mask_bess & mask_retiro, "categoria_plot"] = "BESS Retiro"
+    df.loc[mask_bess & mask_iny, "categoria_plot"] = "BESS Inyección"
+
+    df_plot = (
+        df.groupby(["hora_decimal", "categoria_plot"], as_index=False)["inyeccion_retiro"]
+        .sum()
+    )
+
+    print("Horas únicas df_dia_tipico:", sorted(df["hora_decimal"].dropna().unique())[:30])
+    print("Cantidad de horas únicas df_dia_tipico:", df["hora_decimal"].nunique())
+
+    if df_plot.empty:
+        fig, ax = plt.subplots(figsize=(7.2, 3.2))
+        ax.text(0.5, 0.5, "Sin datos para graficar el día típico", ha="center", va="center", fontsize=11)
+        ax.axis("off")
+        _guardar_fig(fig, out_path, dpi=dpi)
+        return
+
+    pivot = (
+        df_plot.pivot(index="hora_decimal", columns="categoria_plot", values="inyeccion_retiro")
+        .fillna(0)
+        .sort_index()
+    )
+
+    print("Horas únicas gx_tipico:", pivot.index.tolist()[:30])
+    print("Cantidad horas únicas gx_tipico:", len(pivot.index))
+    print("Suma total pivot:", pivot.to_numpy().sum())
+
+    if pivot.empty or len(pivot.index) <= 1 or np.isclose(pivot.to_numpy().sum(), 0):
+        fig, ax = plt.subplots(figsize=(7.2, 3.2))
+        ax.text(
+            0.5, 0.5,
+            "No hay resolución horaria suficiente para construir el gráfico",
+            ha="center", va="center", fontsize=11
+        )
+        ax.axis("off")
+        _guardar_fig(fig, out_path, dpi=dpi)
+        return
+
+    orden_tipos = [
+        "Solar",
+        "Eólica",
+        "Hidro",
+        "Geotérmica",
+        "Térmica",
+        "BESS Inyección",
+        "BESS Retiro",
+    ]
+    tipos_presentes = [t for t in orden_tipos if t in pivot.columns]
+    tipos_restantes = sorted([t for t in pivot.columns if t not in tipos_presentes])
+    cols = tipos_presentes + tipos_restantes
+    pivot = pivot[cols]
+
+    color_map = {
+        "Solar": "#F6C48E",
+        "Eólica": "#A8D5BA",
+        "Hidro": "#8EC5FF",
+        "Geotérmica": "#D9C2A3",
+        "Térmica": "#C9C2E6",
+        "BESS Inyección": "#D96C6C",
+        "BESS Retiro": "#6FA8DC",
+    }
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+
+    x = pivot.index.values
+
+    cols_pos = [c for c in pivot.columns if pivot[c].max() > 0]
+    cols_neg = [c for c in pivot.columns if pivot[c].min() < 0]
+
+    if cols_pos:
+        ax.stackplot(
+            x,
+            [pivot[c].clip(lower=0).values for c in cols_pos],
+            labels=cols_pos,
+            colors=[color_map.get(c, "#D9E2EC") for c in cols_pos],
+            alpha=0.95,
+            linewidth=0.6,
+        )
+
+    if cols_neg:
+        ax.stackplot(
+            x,
+            [pivot[c].clip(upper=0).values for c in cols_neg],
+            labels=cols_neg,
+            colors=[color_map.get(c, "#D9E2EC") for c in cols_neg],
+            alpha=0.95,
+            linewidth=0.6,
+        )
+
+    ax.axhline(0, color="#667085", linewidth=0.8)
+
+    ax.set_title("Generación diaria típica por tecnología", fontsize=11, fontweight="bold")
+    ax.set_xlabel("Hora del día", fontsize=9)
+    ax.set_ylabel("Generación", fontsize=9)
+    ax.yaxis.set_major_formatter(FuncFormatter(_fmt_thousands))
+    ax.tick_params(axis="x", labelsize=8)
+    ax.tick_params(axis="y", labelsize=8)
+    ax.grid(True, axis="y", alpha=0.18)
+    ax.grid(False, axis="x")
+
+    xticks = np.arange(0, 25, 4)
+    ax.set_xticks(xticks)
+    ax.set_xlim(0, 24)
+    ax.set_xticklabels([f"{int(h):02d}:00" for h in xticks])
+
+    sns.despine(ax=ax, top=True, right=True)
+
+    leg = ax.legend(
+        title="Tecnología",
+        loc="upper right",
+        fontsize=7,
+        title_fontsize=8,
+        frameon=True,
+        ncol=2
+    )
+    leg.get_frame().set_alpha(0.9)
+
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.84, bottom=0.20)
+
+    _guardar_fig(fig, out_path, dpi=dpi)
+
+    
+import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
+import numpy as np
+import seaborn as sns
 
 
-def generar_graficas(df_total, df_all, df_maximos, df_max_acumulados, df_cmg, outdir="outputs", dpi=130):
+def graficar_spread_cmg(df_spread: pd.DataFrame, out_path: str, dpi: int = 130):
+    """
+    Grafica barras agrupadas por nombre_cmg:
+    - una barra para horas_solares
+    - una barra para horas_no_solares
+    """
+    columnas_requeridas = {"nombre_cmg", "horas_solares", "horas_no_solares"}
+    faltantes = columnas_requeridas - set(df_spread.columns)
+    if faltantes:
+        raise ValueError(f"Faltan columnas requeridas en df_spread: {sorted(faltantes)}")
+
+    df_plot = df_spread.copy()
+
+    # Ordenar por spread absoluto, de mayor a menor, para que se lea mejor
+    if "spread_abs" in df_plot.columns:
+        df_plot = df_plot.sort_values("spread_abs", ascending=False).reset_index(drop=True)
+
+    x = np.arange(len(df_plot))
+    width = 0.38
+
+    fig, ax = plt.subplots(figsize=(8.2, 4.2))
+
+    color_solar = "#F6C48E"      # naranjo pastel
+    color_no_solar = "#8EC5FF"   # azul pastel
+
+    ax.bar(
+        x - width / 2,
+        df_plot["horas_solares"],
+        width=width,
+        label="Horas solares",
+        color=color_solar,
+        edgecolor="white",
+        linewidth=0.8,
+    )
+
+    ax.bar(
+        x + width / 2,
+        df_plot["horas_no_solares"],
+        width=width,
+        label="Horas no solares",
+        color=color_no_solar,
+        edgecolor="white",
+        linewidth=0.8,
+    )
+
+    ax.set_title("CMG promedio: horas solares vs no solares", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Barra CMG", fontsize=10)
+    ax.set_ylabel("CMG promedio ($/kWh)", fontsize=10)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(df_plot["nombre_cmg"], rotation=35, ha="right", fontsize=8)
+    ax.tick_params(axis="y", labelsize=8)
+
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{v:,.0f}".replace(",", ".")))
+
+    ax.grid(True, axis="y", alpha=0.18)
+    ax.grid(False, axis="x")
+    sns.despine(ax=ax, top=True, right=True)
+
+    leg = ax.legend(frameon=True, fontsize=8)
+    leg.get_frame().set_alpha(0.9)
+
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.87, bottom=0.28)
+
+    _guardar_fig(fig, out_path, dpi=dpi)
+
+def graficar_boxplot_vertimientos_con_total(
+    df_all,
+    out_path,
+    dpi=130,
+    box_ylim_percentile=0.98,
+):
+    """
+    Genera un gráfico combinado:
+    - Boxplot de vertimientos por período (eje izquierdo)
+    - Línea de vertimiento total mensual (eje derecho)
+
+    Parámetros
+    ----------
+    df_all : pd.DataFrame
+        Debe contener columnas:
+        - periodo
+        - vertimiento
+    out_path : str
+        Ruta de salida del gráfico
+    dpi : int
+        Resolución de guardado
+    box_ylim_percentile : float
+        Percentil superior para acotar la escala del boxplot y evitar
+        que los outliers extremos aplasten la visualización.
+        Ejemplo: 0.98 usa el percentil 98.
+    """
+    columnas_requeridas = {"periodo", "vertimiento"}
+    faltantes = columnas_requeridas - set(df_all.columns)
+    if faltantes:
+        raise ValueError(f"Faltan columnas requeridas: {sorted(faltantes)}")
+
+    df_box = df_all.copy()
+
+    df_box["periodo"] = pd.to_datetime(df_box["periodo"], errors="coerce").dt.strftime("%Y-%m")
+    df_box = df_box.dropna(subset=["periodo", "vertimiento"]).copy()
+    df_box["periodo"] = df_box["periodo"].astype(str)
+    df_box["vertimiento"] = pd.to_numeric(df_box["vertimiento"], errors="coerce")
+    df_box = df_box.dropna(subset=["vertimiento"]).copy()
+
+    if df_box.empty:
+        fig, ax = plt.subplots(figsize=(10.4, 4.8))
+        ax.text(0.5, 0.5, "Sin datos para graficar vertimientos", ha="center", va="center", fontsize=12)
+        ax.axis("off")
+        _guardar_fig(fig, out_path, dpi=dpi)
+        return
+
+    order_periodos = sorted(df_box["periodo"].dropna().unique().tolist())
+
+    df_line = (
+        df_box.groupby("periodo", as_index=False)["vertimiento"]
+        .sum()
+        .rename(columns={"vertimiento": "kwh_total"})
+    )
+
+    df_line["periodo"] = pd.Categorical(
+        df_line["periodo"],
+        categories=order_periodos,
+        ordered=True,
+    )
+    df_line = df_line.sort_values("periodo")
+
+    pos_map = {p: i for i, p in enumerate(order_periodos)}
+    x_pos = df_line["periodo"].astype(str).map(pos_map).astype(float)
+
+    fig, ax = plt.subplots(figsize=(10.4, 4.8))
+
+    # =========================
+    # Eje derecho: línea de total mensual
+    # =========================
+    ax2 = ax.twinx()
+
+    pastel_line_color = "#F4B183"
+
+    ax2.plot(
+        x_pos,
+        df_line["kwh_total"].values,
+        linewidth=2.2,
+        color=pastel_line_color,
+        alpha=0.9,
+        zorder=1,
+        label="Total mensual",
+    )
+
+    ax2.set_ylabel("kWh total mensual")
+    ax2.yaxis.set_major_formatter(FuncFormatter(_fmt_thousands))
+    ax2.grid(False)
+    ax2.patch.set_alpha(0)
+    sns.despine(ax=ax2, top=True, left=True)
+
+    # =========================
+    # Eje izquierdo: boxplot
+    # =========================
+    sns.boxplot(
+        data=df_box,
+        x="periodo",
+        y="vertimiento",
+        order=order_periodos,
+        ax=ax,
+        width=0.55,
+        fliersize=2.2,
+        linewidth=1.0,
+        color="#D9ECFF",
+        zorder=3,
+    )
+
+    for patch in ax.artists:
+        patch.set_edgecolor("#1F3A5F")
+        patch.set_linewidth(1.0)
+
+    for line in ax.lines:
+        line.set_color("#1F3A5F")
+        line.set_linewidth(1.0)
+
+    # Escala propia para el boxplot
+    q1 = df_box["vertimiento"].quantile(0.25)
+    q3 = df_box["vertimiento"].quantile(0.75)
+    iqr = q3 - q1
+    upper = q3 + 1.5 * iqr
+
+    if pd.notnull(upper) and upper > 0:
+        ax.set_ylim(0, upper * 1.05)
+
+    ax.set_title("Vertimientos por empresa en cada mes (kWh)")
+    ax.set_xlabel("Periodo")
+    ax.set_ylabel("kWh (distribución)")
+    ax.yaxis.set_major_formatter(FuncFormatter(_fmt_thousands))
+    ax.tick_params(axis="x", rotation=45, labelsize=8)
+    ax.grid(True, axis="y", alpha=0.25)
+
+    sns.despine(ax=ax, top=True, right=True)
+
+    leg = ax2.legend(
+        loc="upper right",
+        bbox_to_anchor=(0.99, 0.99),
+        frameon=True,
+        fontsize=9,
+    )
+    leg.get_frame().set_facecolor("white")
+    leg.get_frame().set_alpha(0.9)
+
+    fig.subplots_adjust(left=0.06, right=0.96, top=0.88, bottom=0.20)
+
+    _guardar_fig(fig, out_path, dpi=dpi)
+
+
+def generar_graficas(
+    df_all,
+    df_spread,
+    df_cmg,
+    df_dia_tipico,
+    outdir="outputs",
+    dpi=130,
+            ):
+
     os.makedirs(outdir, exist_ok=True)
 
     # ==========================================================
@@ -318,104 +717,14 @@ def generar_graficas(df_total, df_all, df_maximos, df_max_acumulados, df_cmg, ou
     )
 
     # ==========================================================
-    # 1) Boxplot + Lineplot (doble eje Y, línea pastel detrás)
+    # 1) Boxplot + línea de total mensual
     # ==========================================================
-    df_box = df_all.copy()
-    df_box["periodo"] = pd.to_datetime(df_box["periodo"], errors="coerce").dt.strftime("%Y-%m")
-    df_box["periodo"] = df_box["periodo"].astype(str)
-
-    order_periodos = sorted(df_box["periodo"].dropna().unique().tolist())
-
-    df_line = (
-        df_box.groupby("periodo", as_index=False)["kwh"]
-        .sum()
-        .rename(columns={"kwh": "kwh_total"})
+    graficar_boxplot_vertimientos_con_total(
+        df_all=df_all,
+        out_path=os.path.join(outdir, "boxplot.svg"),
+        dpi=dpi,
+        box_ylim_percentile=0.98,
     )
-
-    df_line["periodo"] = pd.Categorical(
-        df_line["periodo"],
-        categories=order_periodos,
-        ordered=True,
-    )
-    df_line = df_line.sort_values("periodo")
-
-    pos_map = {p: i for i, p in enumerate(order_periodos)}
-    x_pos = df_line["periodo"].astype(str).map(pos_map).astype(float)
-
-    fig, ax = plt.subplots(figsize=(10.4, 4.8))
-
-
-    # EJE DERECHO (línea detrás)
-
-    ax2 = ax.twinx()
-
-    # Color pastel azul suave
-    pastel_line_color = "#F4B183"
-
-    ax2.plot(
-        x_pos,
-        df_line["kwh_total"].values,
-        linewidth=2.2,
-        color=pastel_line_color,
-        alpha=0.9,
-        zorder=1,  # ← detrás
-        label="Total mensual",
-    )
-
-    ax2.set_ylabel("kWh total mensual")
-    ax2.yaxis.set_major_formatter(FuncFormatter(_fmt_thousands))
-    ax2.grid(False)
-
-    # Hace el fondo transparente para que no tape el boxplot
-    ax2.patch.set_alpha(0)
-
-    sns.despine(ax=ax2, top=True, left=True)
-
- 
-    # BOX PLOT (encima)
-
-    sns.boxplot(
-        data=df_box,
-        x="periodo",
-        y="kwh",
-        order=order_periodos,
-        ax=ax,
-        width=0.55,
-        fliersize=2.2,
-        linewidth=1.0,
-        color="#D9ECFF",
-        zorder=3,  # ← encima
-    )
-
-    for patch in ax.artists:
-        patch.set_edgecolor("#1F3A5F")
-        patch.set_linewidth(1.0)
-
-    for line in ax.lines:
-        line.set_color("#1F3A5F")
-        line.set_linewidth(1.0)
-
-    ax.set_title("Vertimientos por empresa en cada mes (kWh)")
-    ax.set_xlabel("Periodo")
-    ax.set_ylabel("kWh (distribución)")
-    ax.yaxis.set_major_formatter(FuncFormatter(_fmt_thousands))
-    ax.tick_params(axis="x", rotation=45, labelsize=8)
-    ax.grid(True, axis="y", alpha=0.25)
-
-    sns.despine(ax=ax, top=True, right=True)
-
-    # Leyenda (solo de la línea)
-    leg = ax2.legend(
-        loc="upper right",
-        bbox_to_anchor=(0.99, 0.99),
-        frameon=True,
-        fontsize=9,
-    )
-    leg.get_frame().set_facecolor("white")
-    leg.get_frame().set_alpha(0.9)
-
-    fig.subplots_adjust(left=0.06, right=0.96, top=0.88, bottom=0.20)
-    _guardar_fig(fig, os.path.join(outdir, "boxplot.svg"), dpi=dpi)
 
     # ==========================================================
     # 2) Gráfico CMG (múltiples series) - Seaborn lineplot
@@ -423,8 +732,8 @@ def generar_graficas(df_total, df_all, df_maximos, df_max_acumulados, df_cmg, ou
 
     gdf_reg=generar_mapa_regiones(SHP_REGIONES)
     df_c = df_cmg.copy()
-    df_c["fecha_version"] = pd.to_datetime(df_c["fecha_version"], errors="coerce")
-    df_c = df_c.sort_values("fecha_version")
+    df_c["fecha_hora"] = pd.to_datetime(df_c["fecha_hora"], errors="coerce")
+    df_c = df_c.sort_values("fecha_hora")
     # Renombrar valores en la columna nombre_cmg
     rename_map = {
         "CRUCERO_______220": "Barra crucero 200kV",
@@ -442,4 +751,24 @@ def generar_graficas(df_total, df_all, df_maximos, df_max_acumulados, df_cmg, ou
                           bar_points= BAR_POINTS,
                           out_path=os.path.join(outdir, "cmg.svg")
                           )
+    
+    # ==========================================================
+    # 3) Generación típica diaria (área apilada)
+    # ==========================================================
+    graficar_gx_tipico(
+        df_dia_tipico=df_dia_tipico,
+        out_path=os.path.join(outdir, "gx_tipico.svg"),
+        dpi=dpi
+    )
+
+    # ==========================================================
+    # 4) Spread CMG
+    # ========================================================== 
+
+    graficar_spread_cmg(
+        df_spread=df_spread,
+        out_path=os.path.join(outdir, "spread_cmg.svg"),
+        dpi=dpi
+    )
+
 

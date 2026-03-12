@@ -60,7 +60,7 @@ def _pipe(src, dst, stop_event: threading.Event):
     Maneja EOFError/OSError cuando el canal SSH ya se cerró.
     """
     try:
-        src.settimeout(600.0)
+        src.settimeout(3600.0)
         while not stop_event.is_set():
             try:
                 data = src.recv(32768)
@@ -99,6 +99,7 @@ def _forward_tunnel(local_port, remote_host, remote_port, transport, stop_event,
         while not stop_event.is_set():
             try:
                 client_sock, _ = listen_sock.accept()
+                client_sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
             except socket.timeout:
                 continue
             except OSError:
@@ -153,10 +154,13 @@ def open_connection():
         password=SSH_PASSWORD,
         look_for_keys=False,
         allow_agent=False,
+        banner_timeout=60,
+        auth_timeout=60,
     )
 
     # Túnel
     transport = client.get_transport()
+    transport.set_keepalive(30)
     local_port = _get_free_local_port()
     stop_event = threading.Event()
 
@@ -178,8 +182,9 @@ def open_connection():
         password=DB_PASSWORD,
         database=DB_NAME,
         cursorclass=pymysql.cursors.DictCursor,
-        connect_timeout=20,
-        read_timeout=60,
+        connect_timeout=30,
+        read_timeout=1000,
+        write_timeout=1000,
         local_infile=True,
     )
 

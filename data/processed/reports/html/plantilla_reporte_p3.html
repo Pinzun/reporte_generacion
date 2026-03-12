@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Reporte de Mercados</title>
+    <link rel="stylesheet" href="file:///C:/Users/pinzunza/projectos_codigos/analisis_vertimiento/assets/reporte.css" />
+  </head>
+
+  <body>
+    <!-- Background global (se verá en todas las páginas) -->
+    <div class="page-bg">
+      <img src="file:///C:/Users/pinzunza/projectos_codigos/analisis_vertimiento/data/processed/images/fondo_energia.svg" alt="background" />
+    </div>
+
+    <!-- =========================
+         PAGE 3 — Desempeño ecónomicos de empresas
+         ========================= -->
+    <div class="page">
+      <header class="topbar">
+        <div class="brand-text">
+          <div class="brand-title">Monitoreo Mercados Mayoristas</div>
+          <div class="brand-subtitle-1">Período estudiado</div>
+          <div class="brand-subtitle-2">
+            2024-01 → 2024-12
+          </div>
+        </div>
+        <img class="logo logo-right" src="file:///C:/Users/pinzunza/projectos_codigos/analisis_vertimiento/data/processed/images/logo_energia.svg" alt="logo" />
+      </header>
+
+      <main class="page-body">
+        <section class="section">
+          <div class="section-title">
+            <h2>Desempeño ecónomicos de empresas</h2>
+            <div class="rule"></div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card card-pad">
+              <div class="card-head">
+                <div class="card-head-title">Empresas excedentarias</div>
+                <div class="pill">Top 1 por mes</div>
+              </div>
+              <div class="table-wrap"><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>periodo</th>
+      <th>nombre_central</th>
+      <th>tipo</th>
+      <th>dia</th>
+      <th>hora</th>
+      <th>minuto</th>
+      <th>vertimiento_max_kwh</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2024-01-01</td>
+      <td>PFV GUANCHOI</td>
+      <td>Solar</td>
+      <td>1</td>
+      <td>18</td>
+      <td>0</td>
+      <td>189</td>
+    </tr>
+    <tr>
+      <td>2024-02-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>22</td>
+      <td>14</td>
+      <td>0</td>
+      <td>236</td>
+    </tr>
+    <tr>
+      <td>2024-03-01</td>
+      <td>PFV GUANCHOI</td>
+      <td>Solar</td>
+      <td>27</td>
+      <td>17</td>
+      <td>0</td>
+      <td>241</td>
+    </tr>
+    <tr>
+      <td>2024-04-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>7</td>
+      <td>10</td>
+      <td>0</td>
+      <td>182</td>
+    </tr>
+    <tr>
+      <td>2024-05-01</td>
+      <td>PFV DIEGO DE ALMAGRO SUR</td>
+      <td>Solar</td>
+      <td>19</td>
+      <td>9</td>
+      <td>0</td>
+      <td>159</td>
+    </tr>
+    <tr>
+      <td>2024-06-01</td>
+      <td>PFV DIEGO DE ALMAGRO SUR</td>
+      <td>Solar</td>
+      <td>13</td>
+      <td>9</td>
+      <td>0</td>
+      <td>183</td>
+    </tr>
+    <tr>
+      <td>2024-07-01</td>
+      <td>PFV GUANCHOI</td>
+      <td>Solar</td>
+      <td>7</td>
+      <td>16</td>
+      <td>0</td>
+      <td>242</td>
+    </tr>
+    <tr>
+      <td>2024-08-01</td>
+      <td>PFV CEME 1</td>
+      <td>Solar</td>
+      <td>7</td>
+      <td>15</td>
+      <td>0</td>
+      <td>207</td>
+    </tr>
+    <tr>
+      <td>2024-09-01</td>
+      <td>PFV CEME 1</td>
+      <td>Solar</td>
+      <td>27</td>
+      <td>17</td>
+      <td>0</td>
+      <td>332</td>
+    </tr>
+    <tr>
+      <td>2024-10-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>27</td>
+      <td>12</td>
+      <td>0</td>
+      <td>311</td>
+    </tr>
+    <tr>
+      <td>2024-11-01</td>
+      <td>PFV CEME 1</td>
+      <td>Solar</td>
+      <td>17</td>
+      <td>16</td>
+      <td>0</td>
+      <td>354</td>
+    </tr>
+    <tr>
+      <td>2024-12-01</td>
+      <td>PFV CEME 1</td>
+      <td>Solar</td>
+      <td>8</td>
+      <td>17</td>
+      <td>0</td>
+      <td>283</td>
+    </tr>
+  </tbody>
+</table></div>
+            </div>
+
+            <div class="card card-pad">
+              <div class="card-head">
+                <div class="card-head-title">Empresas deficitarias</div>
+                <div class="pill">Top 1 por mes</div>
+              </div>
+              <div class="table-wrap"><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>periodo</th>
+      <th>nombre_central</th>
+      <th>tipo</th>
+      <th>vertimiento_acumulado_kwh</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2024-11-01</td>
+      <td>HE RALCO</td>
+      <td>Hidroeléctricas</td>
+      <td>67.765</td>
+    </tr>
+    <tr>
+      <td>2024-10-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>50.587</td>
+    </tr>
+    <tr>
+      <td>2024-12-01</td>
+      <td>PFV SOL DEL DESIERTO</td>
+      <td>Solar</td>
+      <td>45.797</td>
+    </tr>
+    <tr>
+      <td>2024-09-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>37.727</td>
+    </tr>
+    <tr>
+      <td>2024-01-01</td>
+      <td>HP COYA</td>
+      <td>Hidroeléctricas</td>
+      <td>34.252</td>
+    </tr>
+    <tr>
+      <td>2024-02-01</td>
+      <td>HP COYA</td>
+      <td>Hidroeléctricas</td>
+      <td>30.279</td>
+    </tr>
+    <tr>
+      <td>2024-03-01</td>
+      <td>BESS Andes Solar IIB</td>
+      <td>Bess</td>
+      <td>23.098</td>
+    </tr>
+    <tr>
+      <td>2024-08-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>22.575</td>
+    </tr>
+  </tbody>
+</table></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

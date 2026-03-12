@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>Reporte de Mercados</title>
+    <link rel="stylesheet" href="file:///C:/Users/pinzunza/projectos_codigos/analisis_vertimiento/assets/reporte.css" />
+  </head>
+
+  <body>
+    <!-- Background global (se verá en todas las páginas) -->
+    <div class="page-bg">
+      <img src="file:///C:/Users/pinzunza/projectos_codigos/analisis_vertimiento/data/processed/images/fondo_energia.svg" alt="background" />
+    </div>
+
+    <!-- =========================
+         PAGE 2 — Vertimientos
+         ========================= -->
+    <div class="page">
+      <header class="topbar">
+        <div class="brand-text">
+          <div class="brand-title">Monitoreo Mercados Mayoristas</div>
+          <div class="brand-subtitle-1">Período estudiado</div>
+          <div class="brand-subtitle-2">
+            2024-01 → 2024-12
+          </div>
+        </div>
+        <img class="logo logo-right" src="file:///C:/Users/pinzunza/projectos_codigos/analisis_vertimiento/data/processed/images/logo_energia.svg" alt="logo" />
+      </header>
+
+      <main class="page-body">
+        <section class="section">
+          <div class="section-title">
+            <h2>Vertimientos</h2>
+            <div class="rule"></div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card card-pad">
+              <div class="kpi-note">
+                La presente sección de este reporte muestra información
+                detallada de los vertimientos de energía renovable producidos en
+                el periodo de estudio. La sección muestra dos componentes de
+                información, el primer corresponde a un gráfico de cajas y
+                bigotes más un gráfico de líneas; estas grásficas muestran la
+                distribución de los vertimientos, incluyendo sus valores
+                promedios y su comportamiento normal (cajas), adempás muestra
+                los valores que escapan de este. Por otro lado la misma imagen
+                muestra una gráfica de líneas que indica la cantidad de energía
+                renovable total vertida durante el período de estudio. En
+                segundo lugar en esta sección se muestra una tabla que indica
+                las empresas que por diversas razones se vieron obligadas a
+                verter más energía durante el periodo estudiado.
+              </div>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="card card-pad">
+              <div class="card-head">
+                <div class="card-head-title">
+                  Energía renovable no utilizada
+                </div>
+                <div class="pill">Distribución de datos - totales</div>
+              </div>
+              <figure class="figure figure-fill">
+                <img
+                  class="chart chart-fill"
+                  src=""
+                  alt="Boxplot"
+                />
+              </figure>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="card card-pad">
+              <div class="card-head">
+                <div class="card-head-title">Vertimiento total</div>
+                <div class="pill">Top vertimientos - empresas</div>
+              </div>
+              <div class="table-wrap"><table class="dataframe tbl">
+  <thead>
+    <tr style="text-align: right;">
+      <th>periodo</th>
+      <th>nombre_central</th>
+      <th>tipo</th>
+      <th>vertimiento_acumulado_kwh</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>2024-11-01</td>
+      <td>HE RALCO</td>
+      <td>Hidroeléctricas</td>
+      <td>67.765</td>
+    </tr>
+    <tr>
+      <td>2024-10-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>50.587</td>
+    </tr>
+    <tr>
+      <td>2024-12-01</td>
+      <td>PFV SOL DEL DESIERTO</td>
+      <td>Solar</td>
+      <td>45.797</td>
+    </tr>
+    <tr>
+      <td>2024-09-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>37.727</td>
+    </tr>
+    <tr>
+      <td>2024-01-01</td>
+      <td>HP COYA</td>
+      <td>Hidroeléctricas</td>
+      <td>34.252</td>
+    </tr>
+    <tr>
+      <td>2024-02-01</td>
+      <td>HP COYA</td>
+      <td>Hidroeléctricas</td>
+      <td>30.279</td>
+    </tr>
+    <tr>
+      <td>2024-03-01</td>
+      <td>BESS Andes Solar IIB</td>
+      <td>Bess</td>
+      <td>23.098</td>
+    </tr>
+    <tr>
+      <td>2024-08-01</td>
+      <td>PFV CAMPOS DEL SOL</td>
+      <td>Solar</td>
+      <td>22.575</td>
+    </tr>
+  </tbody>
+</table></div>
+            </div>
+            <div class="card card-pad">
+              <div class="card-head">
+                <div class="card-head-title">
+                  Potencial de generación renovable vs vertimiento
+                </div>
+                <div class="pill">Top vertimientos potencial de generación</div>
+              </div>
+              <figure class="figure figure-fill">
+                <img
+                  class="chart chart-fill chart-map"
+                  src=""
+                  alt="Ubicación"
+                />
+              </figure>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>
