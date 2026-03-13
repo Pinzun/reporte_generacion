@@ -11,7 +11,6 @@ from utils.extrae_data import (
     extrae_gx_real,
 )
 from utils.graficos import generar_graficas
-from utils.pdf_chromium import render_html_to_png
 from utils.calcula_gx_tipico import gx_real_tipico
 from utils.calcula_spread_cmg import spread_cmg
 # -----------------------
@@ -132,10 +131,14 @@ def main(fecha_inicio, fecha_fin):
     IMG_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    #ruta_vertimientos_csv = BASE_DIR / "data" / "raw" / "extraido_db" / "vertimientos.csv"
-    ruta_vertimientos_total_csv = BASE_DIR / "data" / "raw" / "extraido_db" / "vertimientos.csv"
-    ruta_cmg_csv = BASE_DIR / "data" / "raw" / "extraido_db" / "cmg.csv"
+    #rutas de guardado de df del periodo de estudio
+    ruta_vertimientos = BASE_DIR / "data" / "raw" / "extraido_db" / "vertimientos.csv"
+    ruta_cmg = BASE_DIR / "data" / "raw" / "extraido_db" / "cmg.csv"
     ruta_gx_real = BASE_DIR / "data" / "raw" / "extraido_db" / "gx_real.csv"
+    #rutas de guardado de df del periodo de comparacion
+    ruta_vertimientos_comparacion = BASE_DIR / "data" / "raw" / "extraido_db" / "vertimientos_comparacion.csv"
+    ruta_cmg_comparacion = BASE_DIR / "data" / "raw" / "extraido_db" / "cmg_comparacion.csv"
+    ruta_gx_real_comparacion = BASE_DIR / "data" / "raw" / "extraido_db" / "gx_real_comparacion.csv"
 
     # =========================
     # 1) Obtener datos
@@ -144,10 +147,10 @@ def main(fecha_inicio, fecha_fin):
         print("🔧 Modo desarrollo: cargando CSV locales...")
 
         #df_vertimientos_totales = pd.read_csv(ruta_vertimientos_csv)
-        df_vertimientos = pd.read_csv(ruta_vertimientos_total_csv)
-        df_cmg_all = pd.read_csv(ruta_cmg_csv)
+        df_vertimientos = pd.read_csv(ruta_vertimientos)
+        df_cmg_all = pd.read_csv(ruta_cmg)
         df_gx_real = pd.read_csv(ruta_gx_real)
-        df_vertimientos_totales=df_vertimientos.groupby(["periodo"], as_index=False).agg({"vertimiento": "sum"})
+        #df_vertimientos_totales=df_vertimientos.groupby(["periodo"], as_index=False).agg({"vertimiento": "sum"})
 
     else:
         print("🗄️  Modo producción: extrayendo desde base de datos...")
@@ -157,30 +160,56 @@ def main(fecha_inicio, fecha_fin):
         #    fecha_fin=fecha_fin
         #)
 
-        df_vertimientos = extrae_data_total_vertimientos(
+        df_vertimientos,df_vertimientos_comparacion = extrae_data_total_vertimientos(
             fecha_inicio=fecha_inicio,
-            fecha_fin=fecha_fin
+            fecha_fin=fecha_fin,
+            fecha_comparacion_inicio=fecha_comparacion_inicio,
+            fecha_comparacion_fin=fecha_comparacion_fin
         )
 
-        df_cmg_all = extrae_data_cmg(
+        df_cmg_all,df_cmg_all_comparacion = extrae_data_cmg(
             fecha_inicio=fecha_inicio,
-            fecha_fin=fecha_fin
+            fecha_fin=fecha_fin,
+            fecha_comparacion_inicio=fecha_comparacion_inicio,
+            fecha_comparacion_fin=fecha_comparacion_fin
         )
 
-        df_gx_real=extrae_gx_real(
+        df_gx_real,df_gx_real_comparacion=extrae_gx_real(
             fecha_inicio=fecha_inicio,
-            fecha_fin=fecha_fin
+            fecha_fin=fecha_fin,
+            fecha_comparacion_inicio=fecha_comparacion_inicio,
+            fecha_comparacion_fin=fecha_comparacion_fin
         )
+        df_vertimientos["tipo"] = (
+        df_vertimientos["tipo"]
+        .astype(str)
+        .str.replace(r"[\r\n]+", "", regex=True)
+        .str.strip()
+            )
+        
+        df_vertimientos["nombre_central"] = (
+        df_vertimientos["nombre_central"]
+        .astype(str)
+        .str.replace(r"[\r\n]+", " ", regex=True)
+        .str.strip()
+            )
 
         # Guardar CSV para reutilizar        
-        df_vertimientos.to_csv(ruta_vertimientos_total_csv, index=False)        
-        df_cmg_all.to_csv(ruta_cmg_csv, index=False)
+        df_vertimientos.to_csv(ruta_vertimientos, index=False)        
+        df_cmg_all.to_csv(ruta_cmg, index=False)
         df_gx_real.to_csv(
             ruta_gx_real,
             index=False,
             date_format="%Y-%m-%d %H:%M:%S"
         )
-        df_vertimientos_totales=df_vertimientos.groupby(["periodo"], as_index=False).agg({"vertimiento": "sum"})
+
+        df_vertimientos_comparacion.to_csv(ruta_vertimientos_comparacion, index=False)        
+        df_cmg_all.to_csv(ruta_cmg_comparacion, index=False)
+        df_gx_real.to_csv(
+            ruta_gx_real_comparacion,
+            index=False,
+            date_format="%Y-%m-%d %H:%M:%S"
+        )
 
 
         print("📁 CSV guardados para futuras ejecuciones DEV.")
@@ -189,10 +218,8 @@ def main(fecha_inicio, fecha_fin):
     # 1) Limpieza
     # =========================
     df_vertimientos = limpiar_outliers(df_vertimientos)
-
     df_maximos = tabla_maximos_por_periodo(df_vertimientos)
     df_max_acum = tabla_maximos_acumulados_por_periodo(df_vertimientos)
-
     #Truncamos el dato fecha_hora
     df_cmg_all['fecha_hora']=pd.to_datetime(df_cmg_all['fecha_hora'])
     df_cmg_all['fecha_hora'] = df_cmg_all['fecha_hora'].dt.strftime('%Y-%m')
@@ -200,37 +227,34 @@ def main(fecha_inicio, fecha_fin):
     df_cmg = (
         df_cmg_all.groupby(["fecha_hora", "nombre_cmg"], as_index=False)
         .agg({"CMG_PESO_KWH": "mean"})
-    )
-
-    print("Primeras filas de dataframe cmg")
-    print(df_cmg_all.head())
+    )   
 
     # =========================
     # 1.1) Generación real día típico
     # =========================
-    print(df_gx_real.head())
     df_gx_real_tipico=gx_real_tipico(df_gx_real)
     print("Fecha típica:", df_gx_real_tipico["fecha_tipica"])
-    print(df_gx_real_tipico["distancias"].head())
     df_dia_tipico = df_gx_real_tipico["df_dia_tipico"]
-    print(df_dia_tipico.head())
     df_dia_tipico.to_csv(OUT_DIR/"dia_tipico.csv")
     print("Cantidad de horas únicas:", df_dia_tipico["hora_decimal"].nunique())
     
     # =========================
     # 1.2) Spread CMG
     # =========================
-    df_spread=spread_cmg(df_cmg_all)
-
-    
+    df_spread=spread_cmg(df_cmg_all)    
 
     # =========================
     # 2) Generar gráficos
     # =========================
     generar_graficas(
-        df_vertimientos_totales, df_spread, df_cmg, df_dia_tipico,
-        outdir=str(IMG_DIR)
-    )
+    df_vertimientos=df_vertimientos,
+    df_vertimientos_comparacion=df_vertimientos_comparacion,
+    df_spread=df_spread,
+    df_cmg=df_cmg,
+    df_cmg_comparacion=df_cmg_all_comparacion,
+    df_dia_tipico=df_dia_tipico,
+    outdir=str(IMG_DIR),
+            )
 
     # =========================
     # 3) KPIs
@@ -247,21 +271,22 @@ def main(fecha_inicio, fecha_fin):
         except:
             return "—"
 
-    vert_total = float(df_vertimientos_totales["vertimiento"].sum())
-    vert_prom = float(df_vertimientos_totales["vertimiento"].mean())
-    idx_max = df_vertimientos_totales["vertimiento"].idxmax()
-    #Empresa que presenta el maximo vertimiento en el periodo de análisis 
-    df_max_acum["periodo"] = pd.to_datetime(df_max_acum["periodo"])
-    print(df_max_acum)
-    #fila con mayor vertimiento máximo acumulado
-    idx_max = df_max_acum["vertimiento_acumulado_kwh"].idxmax()
-    empresa_vert_max = df_max_acum.loc[idx_max, "nombre_central"]
-    periodo_empresa_max = df_max_acum.loc[idx_max, "periodo"]    
-    periodo_empresa_max = periodo_empresa_max.strftime("%Y-%m")
-    vert_empresa_vert_max=df_max_acum.loc[df_max_acum["vertimiento_acumulado_kwh"].idxmax(), "vertimiento_acumulado_kwh"]
+    #vert_total = float(df_vertimientos_totales["vertimiento"].sum())
+    #vert_prom = float(df_vertimientos_totales["vertimiento"].mean())
+    #idx_max = df_vertimientos_totales["vertimiento"].idxmax()
+    vert_total = float(df_vertimientos["vertimiento"].sum())
+    vert_prom = float(df_vertimientos["vertimiento"].mean())
 
-    vert_max = float(df_vertimientos_totales.loc[idx_max, "vertimiento"])
-    vert_max_periodo = str(df_vertimientos_totales.loc[idx_max, "periodo"])
+    idx_vert_max = df_vertimientos["vertimiento"].idxmax()
+    vert_max = float(df_vertimientos.loc[idx_vert_max, "vertimiento"])
+    vert_max_periodo = str(df_vertimientos.loc[idx_vert_max, "periodo"])
+
+    # fila con mayor vertimiento acumulado
+    idx_empresa_max = df_max_acum["vertimiento_acumulado_kwh"].idxmax()
+    empresa_vert_max = df_max_acum.loc[idx_empresa_max, "nombre_central"]
+    periodo_empresa_max = df_max_acum.loc[idx_empresa_max, "periodo"]
+    periodo_empresa_max = periodo_empresa_max.strftime("%Y-%m")
+    vert_empresa_vert_max = float(df_max_acum.loc[idx_empresa_max, "vertimiento_acumulado_kwh"])
 
 
     cmg_mes = df_cmg.groupby("fecha_hora", as_index=False)["CMG_PESO_KWH"].mean()
@@ -310,6 +335,22 @@ def main(fecha_inicio, fecha_fin):
         }
 
 if __name__ == "__main__":
-    fecha_inicio = "2024-01-01 00:00:00"
-    fecha_fin = "2024-12-31 : 23:45:00"
+    # Fechas originales como string
+    fecha_inicio = "2025-01-01 00:00:00"
+    fecha_fin = "2025-12-31 23:45:00"   # ojo, había un ":" extra en tu string
+
+    # Convertir a datetime
+    fecha_inicio = pd.to_datetime(fecha_inicio)
+    fecha_fin = pd.to_datetime(fecha_fin)
+
+    # Generar fechas de comparación (un año antes)
+    fecha_comparacion_inicio = fecha_inicio - pd.DateOffset(years=1)
+    fecha_comparacion_fin = fecha_fin - pd.DateOffset(years=1)
+
+    print("Fecha inicio:", fecha_inicio)
+    print("Fecha fin:", fecha_fin)
+    print("Fecha comparación inicio:", fecha_comparacion_inicio)
+    print("Fecha comparación fin:", fecha_comparacion_fin)
+
+
     main(fecha_inicio,fecha_fin)

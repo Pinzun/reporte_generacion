@@ -139,7 +139,7 @@ def generar_mapa_regiones(shp_path, target_crs="EPSG:32719"):
 
     return gdf
 
-def graficar_cmg_con_mapa(df_cmg, gdf_reg, bar_points, out_path, dpi=130):
+def graficar_cmg_con_mapa(df_cmg, df_cmg_comparacion, gdf_reg, bar_points, out_path, dpi=130):
     df_c = df_cmg.copy()
     df_c["fecha_hora"] = pd.to_datetime(df_c["fecha_hora"], errors="coerce")
     df_c = df_c.dropna(subset=["fecha_hora", "CMG_PESO_KWH", "nombre_cmg"]).copy()
@@ -463,13 +463,7 @@ def graficar_gx_tipico(df_dia_tipico, out_path, dpi=130):
 
     fig.subplots_adjust(left=0.08, right=0.98, top=0.84, bottom=0.20)
 
-    _guardar_fig(fig, out_path, dpi=dpi)
-
-    
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FuncFormatter
-import numpy as np
-import seaborn as sns
+    _guardar_fig(fig, out_path, dpi=dpi)    
 
 
 def graficar_spread_cmg(df_spread: pd.DataFrame, out_path: str, dpi: int = 130):
@@ -549,31 +543,17 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
     - vertimiento
     """
 
-    columnas_requeridas = {"periodo", "vertimiento"}
-    faltantes = columnas_requeridas - set(df_all.columns)
-    if faltantes:
-        raise ValueError(f"Faltan columnas requeridas: {sorted(faltantes)}")
-
+    # ==========================================================
+    # 1) Boxplot + Lineplot (doble eje Y, línea pastel detrás)
+    # ==========================================================
+    print("df a partir del que se generan los gráficos de vertimientos")
+    print (df_all.head())
     df_box = df_all.copy()
-
     df_box["periodo"] = pd.to_datetime(df_box["periodo"], errors="coerce").dt.strftime("%Y-%m")
     df_box["periodo"] = df_box["periodo"].astype(str)
 
-    df_box["vertimiento"] = pd.to_numeric(df_box["vertimiento"], errors="coerce")
-    df_box = df_box.dropna(subset=["periodo", "vertimiento"]).copy()
-
-    if df_box.empty:
-        fig, ax = plt.subplots(figsize=(10.4, 4.8))
-        ax.text(0.5, 0.5, "Sin datos para graficar", ha="center", va="center", fontsize=12)
-        ax.axis("off")
-        _guardar_fig(fig, out_path, dpi=dpi)
-        return
-
     order_periodos = sorted(df_box["periodo"].dropna().unique().tolist())
 
-    # =========================
-    # Totales mensuales
-    # =========================
     df_line = (
         df_box.groupby("periodo", as_index=False)["vertimiento"]
         .sum()
@@ -592,11 +572,12 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
 
     fig, ax = plt.subplots(figsize=(10.4, 4.8))
 
-    # ==================================================
-    # EJE DERECHO (línea de total mensual)
-    # ==================================================
+
+    # EJE DERECHO (línea detrás)
+
     ax2 = ax.twinx()
 
+    # Color pastel azul suave
     pastel_line_color = "#F4B183"
 
     ax2.plot(
@@ -605,7 +586,7 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
         linewidth=2.2,
         color=pastel_line_color,
         alpha=0.9,
-        zorder=1,
+        zorder=1,  # ← detrás
         label="Total mensual",
     )
 
@@ -613,13 +594,14 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
     ax2.yaxis.set_major_formatter(FuncFormatter(_fmt_thousands))
     ax2.grid(False)
 
+    # Hace el fondo transparente para que no tape el boxplot
     ax2.patch.set_alpha(0)
 
     sns.despine(ax=ax2, top=True, left=True)
 
-    # ==================================================
-    # BOX PLOT (distribución)
-    # ==================================================
+ 
+    # BOX PLOT (encima)
+
     sns.boxplot(
         data=df_box,
         x="periodo",
@@ -630,7 +612,7 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
         fliersize=2.2,
         linewidth=1.0,
         color="#D9ECFF",
-        zorder=3,
+        zorder=3,  # ← encima
     )
 
     for patch in ax.artists:
@@ -650,7 +632,7 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
 
     sns.despine(ax=ax, top=True, right=True)
 
-    # Leyenda
+    # Leyenda (solo de la línea)
     leg = ax2.legend(
         loc="upper right",
         bbox_to_anchor=(0.99, 0.99),
@@ -660,14 +642,16 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
     leg.get_frame().set_facecolor("white")
     leg.get_frame().set_alpha(0.9)
 
-    fig.subplots_adjust(left=0.06, right=0.96, top=0.88, bottom=0.20)
-
+    fig.subplots_adjust(left=0.06, right=0.96, top=0.88, bottom=0.20)  
     _guardar_fig(fig, out_path, dpi=dpi)
 
+
 def generar_graficas(
-    df_all,
+    df_vertimientos,
+    df_vertimientos_comparacion,
     df_spread,
     df_cmg,
+    df_cmg_comparacion,
     df_dia_tipico,
     outdir="outputs",
     dpi=130,
@@ -701,7 +685,7 @@ def generar_graficas(
     # 1) Boxplot + línea de total mensual
     # ==========================================================
     graficar_boxplot_vertimientos_con_total(
-        df_all=df_all,
+        df_all=df_vertimientos,
         out_path=os.path.join(outdir, "boxplot.svg"),
         dpi=dpi,
     )
@@ -711,22 +695,28 @@ def generar_graficas(
     # ==========================================================
 
     gdf_reg=generar_mapa_regiones(SHP_REGIONES)
+    # df del periodo de estudio
     df_c = df_cmg.copy()
     df_c["fecha_hora"] = pd.to_datetime(df_c["fecha_hora"], errors="coerce")
     df_c = df_c.sort_values("fecha_hora")
+
+    # df comparacion
+    df_com = df_cmg_comparacion.copy()
+    df_com["fecha_hora"] = pd.to_datetime(df_com["fecha_hora"], errors="coerce")
+    df_com = df_com.sort_values("fecha_hora")
+
     # Renombrar valores en la columna nombre_cmg
     rename_map = {
         "CRUCERO_______220": "Barra crucero 200kV",
-        "P.AZUCAR______220": "Barra Pan de Azucar 220kV",
-        "QUILLOTA______220": "Barra Quillota 220kV",
         "AJAHUEL_______500": "Barra Alto Jahuel 500kV",
-        "CHARRUA_______500": "Barra Charrua 500kV",
         "P.MONTT_______220": "Barra Puerto Montt 220kV"
-
     }
+
     df_c["nombre_cmg"] = df_c["nombre_cmg"].replace(rename_map)
+    df_com["nombre_cmg"] = df_com["nombre_cmg"].replace(rename_map)
 
     graficar_cmg_con_mapa(df_cmg=df_c,
+                          df_cmg_comparacion=df_com,
                           gdf_reg=gdf_reg,
                           bar_points= BAR_POINTS,
                           out_path=os.path.join(outdir, "cmg.svg")
