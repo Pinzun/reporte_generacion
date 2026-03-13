@@ -38,8 +38,8 @@ TEMPLATE_NAME_1 = "reporte_p1.html"
 TEMPLATE_NAME_2 = "reporte_p2.html"
 TEMPLATE_NAME_3 = "reporte_p3.html"
 PDF_NAME = "reporte.pdf"
-DEV = True 
-GENERAR_PLANTILLA =False
+DEV = False 
+GENERAR_PLANTILLA =True
 # -----------------------
 # Helpers
 # -----------------------
@@ -308,75 +308,6 @@ def main(fecha_inicio, fecha_fin):
             "maximos": tabla_max.to_html(index=False, escape=True, classes="tbl", border=0),
             "acumulados": tabla_acum.to_html(index=False, escape=True, classes="tbl", border=0),
         }
-
-        # =========================
-        # 5) Renderizar PDF
-        # =========================
-        css_path = ASSETS_DIR / "reporte.css"
-        logo_path = ASSETS_DIR / "logo.png"
-
-        def img_uri(stem):
-            svg = IMG_DIR / f"{stem}.svg"
-            png = IMG_DIR / f"{stem}.png"
-            if svg.exists():
-                return svg.as_uri()
-            if png.exists():
-                return png.as_uri()
-            return None
-
-        # Convertir fecha_inicio a formato YYYY-MM
-        fecha_inicio = fecha_inicio[:7]  # Extrae "2024-01" de "2024-01-01"
-        fecha_fin = fecha_fin[:7]  # Extrae "2024-01" de "2024-01-01"
-        context = {
-            "fecha_inicio": fecha_inicio,
-            "fecha_fin": fecha_fin,
-            "generado_el": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            "css_href": css_path.as_uri(),
-            "logo_href": logo_path.as_uri() if logo_path.exists() else None,
-            "kpis": kpis,
-            "tables_html": tables_html,
-            "imgs": {
-                #"cmg": img_uri("cmg"),
-                #"boxplot": img_uri("boxplot"),
-                #"total_mwh": img_uri("total_kwh"),
-                "background_href" :img_uri("fondo_energia"),
-                "logo_energia": img_uri("logo_energia"),
-                #"mapa_barras": img_uri("se_sen")
-            },
-        }
-
-
-    
-        
-        render_html_to_png(
-            template_dir=TEMPL_DIR,
-            template_name=TEMPLATE_NAME_1,
-            context=context,
-            output_png=PNG_PATH_1,
-            output_html= HTML_PATH_1,
-            dpi=300,
-        )
-
-        render_html_to_png(
-            template_dir=TEMPL_DIR,
-            template_name=TEMPLATE_NAME_2,
-            context=context,
-            output_png=PNG_PATH_2,
-            output_html=HTML_PATH_2,
-            dpi=300,
-        )
-
-        render_html_to_png(
-            template_dir=TEMPL_DIR,
-            template_name=TEMPLATE_NAME_3,
-            context=context,
-            output_png=PNG_PATH_3,
-            output_html=HTML_PATH_3,
-            dpi=300,
-        )
-       
-        print("✅ PNG plantilla generadas")
-        print("🧩 HTML (debug) generadas")
 
 if __name__ == "__main__":
     fecha_inicio = "2024-01-01 00:00:00"

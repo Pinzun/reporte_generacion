@@ -3,63 +3,38 @@ from utils.db_utils import open_connection, close_connection
 
 
 # =========================================================
-# Extrae datos agregados de vertimientos
+# Extrae datos de vertimientos
 # =========================================================
-def extrae_data_vertimientos(fecha_inicio=None, fecha_fin=None):
+def extract_data_vertimientos(fecha_inicio=None, fecha_fin=None):
     conn, ssh_client, stop_event = open_connection()
 
     query_total = f"""
-        SELECT 
-            ver.periodo,
-            SUM(vert.vertimiento) / 1000 AS vertimiento_mwh
-        FROM balance.vertimiento AS vert
-        JOIN balance.version AS ver 
-            ON ver.id_version = vert.id_version
-        WHERE ver.periodo BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
-        GROUP BY ver.id_version, ver.periodo
-        ORDER BY ver.periodo ASC;
-    """
+            SELECT ver.periodo, SUM(vert.kwh)/1000 AS vertimiento_mwh
+            FROM balance.vertimiento AS vert
+            JOIN balance.version AS ver ON ver.id_version = vert.idversion
+            WHERE periodo BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
+            GROUP BY ver.id_version, ver.periodo
+            ORDER BY ver.periodo ASC
+            ;
+         """
 
     with conn.cursor() as cursor:
         cursor.execute(query_total)
-        data_total = cursor.fetchall()
+        data_total = cursor.fetchall()  # ya devuelve lista de dicts
 
-    # Máximo mensual por instante (día/hora/minuto/cuarto_hora)
     query_max = f"""
-        SELECT
-            t.periodo,
-            t.cuarto_hora,
-            t.dia,
-            t.hora,
-            t.minuto,
-            t.vertimiento_kwh
-        FROM (
-            SELECT
-                ver.periodo,
-                hor.cuarto_hora,
-                hor.dia,
-                hor.hora,
-                hor.minuto,
-                vert.vertimiento AS vertimiento_kwh,
-                ROW_NUMBER() OVER (
-                    PARTITION BY ver.periodo
-                    ORDER BY vert.vertimiento DESC, hor.dia, hor.hora, hor.minuto
-                ) AS rn
-            FROM balance.vertimiento AS vert
-            JOIN balance.hora_mensual AS hor 
-                ON hor.id_hora = vert.id_hora
-            JOIN balance.version AS ver 
-                ON ver.id_version = vert.id_version
-            WHERE ver.periodo BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
-        ) t
-        WHERE t.rn = 1
-        ORDER BY t.periodo;
-    """
-
+        -- Para obtener maximo mensual por hora
+        SELECT ver.periodo, hor.cuarto_hora, hor.dia, hor.hora, hor.minuto, MAX(vert.kwh) AS vertimiento_kwh
+        FROM balance.vertimiento AS vert
+        JOIN balance.hora_mensual AS hor ON hor.id_hora = vert.id_hora
+        JOIN balance.version AS ver ON ver.id_version = vert.idversion
+        WhERE ver.periodo BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
+        GROUP BY vert.idversion;"""
+    
     with conn.cursor() as cursor:
         cursor.execute(query_max)
-        data_max = cursor.fetchall()
-
+        data_max =   cursor.fetchall()  # ya devuelve lista de dicts
+    
     close_connection(conn, ssh_client, stop_event)
 
     return pd.DataFrame(data_total), pd.DataFrame(data_max)
