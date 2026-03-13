@@ -538,32 +538,17 @@ def graficar_spread_cmg(df_spread: pd.DataFrame, out_path: str, dpi: int = 130):
 
     _guardar_fig(fig, out_path, dpi=dpi)
 
-def graficar_boxplot_vertimientos_con_total(
-    df_all,
-    out_path,
-    dpi=130,
-    box_ylim_percentile=0.98,
-):
+def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
     """
     Genera un gráfico combinado:
-    - Boxplot de vertimientos por período (eje izquierdo)
-    - Línea de vertimiento total mensual (eje derecho)
+    - boxplot de vertimientos por empresa en cada mes (eje izquierdo)
+    - línea de vertimiento total mensual (eje derecho)
 
-    Parámetros
-    ----------
-    df_all : pd.DataFrame
-        Debe contener columnas:
-        - periodo
-        - vertimiento
-    out_path : str
-        Ruta de salida del gráfico
-    dpi : int
-        Resolución de guardado
-    box_ylim_percentile : float
-        Percentil superior para acotar la escala del boxplot y evitar
-        que los outliers extremos aplasten la visualización.
-        Ejemplo: 0.98 usa el percentil 98.
+    Requiere columnas:
+    - periodo
+    - vertimiento
     """
+
     columnas_requeridas = {"periodo", "vertimiento"}
     faltantes = columnas_requeridas - set(df_all.columns)
     if faltantes:
@@ -572,20 +557,23 @@ def graficar_boxplot_vertimientos_con_total(
     df_box = df_all.copy()
 
     df_box["periodo"] = pd.to_datetime(df_box["periodo"], errors="coerce").dt.strftime("%Y-%m")
-    df_box = df_box.dropna(subset=["periodo", "vertimiento"]).copy()
     df_box["periodo"] = df_box["periodo"].astype(str)
+
     df_box["vertimiento"] = pd.to_numeric(df_box["vertimiento"], errors="coerce")
-    df_box = df_box.dropna(subset=["vertimiento"]).copy()
+    df_box = df_box.dropna(subset=["periodo", "vertimiento"]).copy()
 
     if df_box.empty:
         fig, ax = plt.subplots(figsize=(10.4, 4.8))
-        ax.text(0.5, 0.5, "Sin datos para graficar vertimientos", ha="center", va="center", fontsize=12)
+        ax.text(0.5, 0.5, "Sin datos para graficar", ha="center", va="center", fontsize=12)
         ax.axis("off")
         _guardar_fig(fig, out_path, dpi=dpi)
         return
 
     order_periodos = sorted(df_box["periodo"].dropna().unique().tolist())
 
+    # =========================
+    # Totales mensuales
+    # =========================
     df_line = (
         df_box.groupby("periodo", as_index=False)["vertimiento"]
         .sum()
@@ -604,9 +592,9 @@ def graficar_boxplot_vertimientos_con_total(
 
     fig, ax = plt.subplots(figsize=(10.4, 4.8))
 
-    # =========================
-    # Eje derecho: línea de total mensual
-    # =========================
+    # ==================================================
+    # EJE DERECHO (línea de total mensual)
+    # ==================================================
     ax2 = ax.twinx()
 
     pastel_line_color = "#F4B183"
@@ -624,12 +612,14 @@ def graficar_boxplot_vertimientos_con_total(
     ax2.set_ylabel("kWh total mensual")
     ax2.yaxis.set_major_formatter(FuncFormatter(_fmt_thousands))
     ax2.grid(False)
+
     ax2.patch.set_alpha(0)
+
     sns.despine(ax=ax2, top=True, left=True)
 
-    # =========================
-    # Eje izquierdo: boxplot
-    # =========================
+    # ==================================================
+    # BOX PLOT (distribución)
+    # ==================================================
     sns.boxplot(
         data=df_box,
         x="periodo",
@@ -651,15 +641,6 @@ def graficar_boxplot_vertimientos_con_total(
         line.set_color("#1F3A5F")
         line.set_linewidth(1.0)
 
-    # Escala propia para el boxplot
-    q1 = df_box["vertimiento"].quantile(0.25)
-    q3 = df_box["vertimiento"].quantile(0.75)
-    iqr = q3 - q1
-    upper = q3 + 1.5 * iqr
-
-    if pd.notnull(upper) and upper > 0:
-        ax.set_ylim(0, upper * 1.05)
-
     ax.set_title("Vertimientos por empresa en cada mes (kWh)")
     ax.set_xlabel("Periodo")
     ax.set_ylabel("kWh (distribución)")
@@ -669,6 +650,7 @@ def graficar_boxplot_vertimientos_con_total(
 
     sns.despine(ax=ax, top=True, right=True)
 
+    # Leyenda
     leg = ax2.legend(
         loc="upper right",
         bbox_to_anchor=(0.99, 0.99),
@@ -681,7 +663,6 @@ def graficar_boxplot_vertimientos_con_total(
     fig.subplots_adjust(left=0.06, right=0.96, top=0.88, bottom=0.20)
 
     _guardar_fig(fig, out_path, dpi=dpi)
-
 
 def generar_graficas(
     df_all,
@@ -723,7 +704,6 @@ def generar_graficas(
         df_all=df_all,
         out_path=os.path.join(outdir, "boxplot.svg"),
         dpi=dpi,
-        box_ylim_percentile=0.98,
     )
 
     # ==========================================================
