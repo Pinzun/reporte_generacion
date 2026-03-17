@@ -9,35 +9,29 @@ from utils.extrae_data import (
     extrae_data_total_vertimientos,
     extrae_data_cmg,
     extrae_gx_real,
+    extrae_gx_real_comparacion
 )
 from utils.graficos import generar_graficas
+from utils.exporta_excel import exporta_dfs_to_excel
 from utils.calcula_gx_tipico import gx_real_tipico
 from utils.calcula_spread_cmg import spread_cmg
+from utils.calcula_gx_inyectada_vertida import gx_ver_iny
+from utils.calcula_top_vertimiento import top_vertimientos
+from utils.inserta_texto_ppt import insertar_periodo_estudio, exportar_ppt_a_pdf
 # -----------------------
 # Config
 # -----------------------
-
 
 BASE_DIR = Path(__file__).parent
 TEMPL_DIR = BASE_DIR / "templates"
 ASSETS_DIR = BASE_DIR / "assets"
 IMG_DIR = BASE_DIR / "data" / "processed" / "images"
 OUT_DIR = BASE_DIR / "data" / "processed" / "reports"
+PPT_PATH = OUT_DIR / "reporte_generacion.pptx"
+PDF_PATH = OUT_DIR / "reporte_generacion.pdf"
 
-PNG_PATH_1 = OUT_DIR / "png" / "plantilla_reporte_p1.png"
-PNG_PATH_2 = OUT_DIR / "png" / "plantilla_reporte_p2.png"
-PNG_PATH_3 = OUT_DIR / "png" / "plantilla_reporte_p3.png"
-HTML_PATH_1 = OUT_DIR / "html" / "plantilla_reporte_p1.html"
-HTML_PATH_2 = OUT_DIR / "html" / "plantilla_reporte_p2.html"
-HTML_PATH_3 = OUT_DIR / "html" / "plantilla_reporte_p3.html"
-
-
-
-TEMPLATE_NAME_1 = "reporte_p1.html"
-TEMPLATE_NAME_2 = "reporte_p2.html"
-TEMPLATE_NAME_3 = "reporte_p3.html"
 PDF_NAME = "reporte.pdf"
-DEV = False 
+DEV = True 
 GENERAR_PLANTILLA =True
 # -----------------------
 # Helpers
@@ -126,7 +120,7 @@ def tabla_maximos_acumulados_por_periodo(df_vertimientos: pd.DataFrame) -> pd.Da
 # -----------------------
 # Main
 # -----------------------
-def main(fecha_inicio, fecha_fin):
+def main(fecha_inicio, fecha_fin, fecha_comparacion_inicio, fecha_comparacion_fin):
     # Crear carpetas
     IMG_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -138,6 +132,7 @@ def main(fecha_inicio, fecha_fin):
     #rutas de guardado de df del periodo de comparacion
     ruta_vertimientos_comparacion = BASE_DIR / "data" / "raw" / "extraido_db" / "vertimientos_comparacion.csv"
     ruta_cmg_comparacion = BASE_DIR / "data" / "raw" / "extraido_db" / "cmg_comparacion.csv"
+    ruta_gx_real_comparacion_2022 = BASE_DIR / "data" / "raw" / "extraido_db" / "gx_real_comparacion_2022.csv"
     ruta_gx_real_comparacion = BASE_DIR / "data" / "raw" / "extraido_db" / "gx_real_comparacion.csv"
 
     # =========================
@@ -148,17 +143,16 @@ def main(fecha_inicio, fecha_fin):
 
         #df_vertimientos_totales = pd.read_csv(ruta_vertimientos_csv)
         df_vertimientos = pd.read_csv(ruta_vertimientos)
+        df_vertimientos_comparacion=pd.read_csv(ruta_vertimientos_comparacion)
         df_cmg_all = pd.read_csv(ruta_cmg)
+        df_cmg_all_comparacion=pd.read_csv(ruta_cmg_comparacion)
         df_gx_real = pd.read_csv(ruta_gx_real)
+        df_gx_real_comparacion =pd.read_csv(ruta_gx_real_comparacion)
+        df_gx_real_comparacion_2022 =pd.read_csv(ruta_gx_real_comparacion_2022)
         #df_vertimientos_totales=df_vertimientos.groupby(["periodo"], as_index=False).agg({"vertimiento": "sum"})
 
     else:
-        print("🗄️  Modo producción: extrayendo desde base de datos...")
-
-        #df_vertimientos_totales, _ = extract_data_vertimientos(
-        #    fecha_inicio=fecha_inicio,
-        #    fecha_fin=fecha_fin
-        #)
+        print("🗄️  Modo producción: extrayendo desde base de datos...") 
 
         df_vertimientos,df_vertimientos_comparacion = extrae_data_total_vertimientos(
             fecha_inicio=fecha_inicio,
@@ -166,20 +160,28 @@ def main(fecha_inicio, fecha_fin):
             fecha_comparacion_inicio=fecha_comparacion_inicio,
             fecha_comparacion_fin=fecha_comparacion_fin
         )
+        df_vertimientos.to_csv(ruta_vertimientos, index=False)
+        df_vertimientos_comparacion.to_csv(ruta_vertimientos_comparacion, index=False)        
+        print("📁 CSV vertimiento Guardado para futuras ejecuciones DEV.")      
 
         df_cmg_all,df_cmg_all_comparacion = extrae_data_cmg(
             fecha_inicio=fecha_inicio,
             fecha_fin=fecha_fin,
-            fecha_comparacion_inicio=fecha_comparacion_inicio,
-            fecha_comparacion_fin=fecha_comparacion_fin
+            fecha_inicio_comparacion=fecha_comparacion_inicio,
+            fecha_fin_comparacion=fecha_comparacion_fin
         )
+
+        df_cmg_all.to_csv(ruta_cmg, index=False)
+        df_cmg_all_comparacion.to_csv(ruta_cmg_comparacion, index=False)  
+        print("📁 CSV cmg Guardado para futuras ejecuciones DEV.")
 
         df_gx_real,df_gx_real_comparacion=extrae_gx_real(
             fecha_inicio=fecha_inicio,
-            fecha_fin=fecha_fin,
-            fecha_comparacion_inicio=fecha_comparacion_inicio,
-            fecha_comparacion_fin=fecha_comparacion_fin
+            fecha_fin=fecha_fin
         )
+
+        df_gx_real_comparacion_2022=extrae_gx_real_comparacion()
+
         df_vertimientos["tipo"] = (
         df_vertimientos["tipo"]
         .astype(str)
@@ -195,22 +197,23 @@ def main(fecha_inicio, fecha_fin):
             )
 
         # Guardar CSV para reutilizar        
-        df_vertimientos.to_csv(ruta_vertimientos, index=False)        
-        df_cmg_all.to_csv(ruta_cmg, index=False)
+
         df_gx_real.to_csv(
             ruta_gx_real,
             index=False,
             date_format="%Y-%m-%d %H:%M:%S"
         )
-
-        df_vertimientos_comparacion.to_csv(ruta_vertimientos_comparacion, index=False)        
-        df_cmg_all.to_csv(ruta_cmg_comparacion, index=False)
-        df_gx_real.to_csv(
+        df_gx_real_comparacion.to_csv(
             ruta_gx_real_comparacion,
             index=False,
             date_format="%Y-%m-%d %H:%M:%S"
-        )
+        )  
 
+        df_gx_real_comparacion_2022.to_csv(
+            ruta_gx_real_comparacion_2022,
+            index=False,
+            date_format="%Y-%m-%d %H:%M:%S"
+        )  
 
         print("📁 CSV guardados para futuras ejecuciones DEV.")
 
@@ -218,10 +221,10 @@ def main(fecha_inicio, fecha_fin):
     # 1) Limpieza
     # =========================
     df_vertimientos = limpiar_outliers(df_vertimientos)
-    df_maximos = tabla_maximos_por_periodo(df_vertimientos)
     df_max_acum = tabla_maximos_acumulados_por_periodo(df_vertimientos)
     #Truncamos el dato fecha_hora
     df_cmg_all['fecha_hora']=pd.to_datetime(df_cmg_all['fecha_hora'])
+    df_cmg_detalle=df_cmg_all.copy()
     df_cmg_all['fecha_hora'] = df_cmg_all['fecha_hora'].dt.strftime('%Y-%m')
 
     df_cmg = (
@@ -235,14 +238,46 @@ def main(fecha_inicio, fecha_fin):
     df_gx_real_tipico=gx_real_tipico(df_gx_real)
     print("Fecha típica:", df_gx_real_tipico["fecha_tipica"])
     df_dia_tipico = df_gx_real_tipico["df_dia_tipico"]
-    df_dia_tipico.to_csv(OUT_DIR/"dia_tipico.csv")
-    print("Cantidad de horas únicas:", df_dia_tipico["hora_decimal"].nunique())
+
+    # =========================
+    # 1.1.2) Generación real día típico comparacion
+    # =========================
+    df_gx_real_tipico_comparacion=gx_real_tipico(df_gx_real_comparacion_2022)
+    print("Fecha típica:", df_gx_real_tipico_comparacion["fecha_tipica"])
+    df_dia_tipico_comparacion = df_gx_real_tipico_comparacion["df_dia_tipico"]
+   
     
     # =========================
     # 1.2) Spread CMG
     # =========================
-    df_spread=spread_cmg(df_cmg_all)    
+    df_spread=spread_cmg(df_cmg_detalle) 
 
+    # =========================
+    # 1.3) Generación inyectada vs real
+    # =========================
+    df_gx_ver_iny=gx_ver_iny(df_gx_real,df_vertimientos)
+
+    # =========================
+    # 1.4) Top vertimientos
+    # =========================
+    df_top_vertimientos=top_vertimientos(df_vertimientos)
+
+    # =========================
+    # 2) Exportar a excel intermedio
+    # =========================
+    dfs_exportar=[
+    df_vertimientos,
+    df_vertimientos_comparacion,
+    df_spread,
+    df_cmg,
+    df_cmg_all_comparacion,
+    df_dia_tipico,
+    df_gx_ver_iny,
+    df_top_vertimientos]
+
+
+
+    '''
     # =========================
     # 2) Generar gráficos
     # =========================
@@ -253,6 +288,9 @@ def main(fecha_inicio, fecha_fin):
     df_cmg=df_cmg,
     df_cmg_comparacion=df_cmg_all_comparacion,
     df_dia_tipico=df_dia_tipico,
+    df_gx_ver_iny=df_gx_ver_iny,
+    df_top_vertimiento=df_top_vertimientos,
+    ppt_path= PPT_PATH,
     outdir=str(IMG_DIR),
             )
 
@@ -284,9 +322,21 @@ def main(fecha_inicio, fecha_fin):
     # fila con mayor vertimiento acumulado
     idx_empresa_max = df_max_acum["vertimiento_acumulado_kwh"].idxmax()
     empresa_vert_max = df_max_acum.loc[idx_empresa_max, "nombre_central"]
+
     periodo_empresa_max = df_max_acum.loc[idx_empresa_max, "periodo"]
-    periodo_empresa_max = periodo_empresa_max.strftime("%Y-%m")
+
+    # Asegurar que es datetime
+    if not pd.api.types.is_datetime64_any_dtype(df_max_acum["periodo"]):
+        periodo_empresa_max = pd.to_datetime(periodo_empresa_max, errors="coerce")
+
+    # Si la conversión falla, mantener como string
+    if pd.notnull(periodo_empresa_max):
+        periodo_empresa_max = periodo_empresa_max.strftime("%Y-%m")
+    else:
+        periodo_empresa_max = str(df_max_acum.loc[idx_empresa_max, "periodo"])
+
     vert_empresa_vert_max = float(df_max_acum.loc[idx_empresa_max, "vertimiento_acumulado_kwh"])
+
 
 
     cmg_mes = df_cmg.groupby("fecha_hora", as_index=False)["CMG_PESO_KWH"].mean()
@@ -300,39 +350,43 @@ def main(fecha_inicio, fecha_fin):
     except:
         cmg_max_periodo = str(cmg_mes.loc[idx_cmg_max, "fecha_hora"])
 
+    kpis = {
+        "vert_total_mwh": fmt_int(vert_total),         #Vertimientos totales
+        "vert_prom_mensual_mwh": fmt_int(vert_prom),   #Promedio mensual de energia vertida
+        "vert_max_mensual_mwh": fmt_int(vert_max),     #Vertimiento maximo mensual
+        "vert_max_mensual_periodo": vert_max_periodo,  #Mes en el que se produjo el máximo vertimiento
+        "cmg_promedio": fmt_float(cmg_prom),           #Costo marginal promedio
+        "cmg_max_mensual": fmt_float(cmg_max),         #Costo marginal maximo por mes
+        "cmg_max_mensual_periodo": cmg_max_periodo,    #Costos marginal maximo en el periodo de estudio
+        "empresa_vert_max":empresa_vert_max,             #Empresa que presenta el maximo vertimiento acumulado     
+        "periodo_empresa_max":periodo_empresa_max,       #Periodo en el que empresa_vert_max presente mayores vertimientos
+        "vert_empresa_vert_max": vert_empresa_vert_max,   #Cantidad de energia vertida por empresa_vert_max
+        #"vert_empresa_vert_max_pct" :vert_empresa_vert_max_pct                  # porción de la energía vertida por la empresa respecto del total vertido
+        #"cmg_spread_max"                              #spread maximo 
+        #"dia_cmg_spread_max_periodo"                  # Día en el que se produce el spread máximo
+        #"barra_cmg_spread_max"                        #Barra en la que se genera el spread máximo
+    }
+    '''
 
-    if GENERAR_PLANTILLA == True:
+    # ==========================================================
+    # 4) Inserciones finales de texto
+    # ========================================================== 
+    fecha_inicio_formateada=pd.to_datatime(fecha_inicio)
+    fecha_fin_formateada=pd.to_datatime(fecha_fin)
+    fecha_inicio_formateada = fecha_inicio_formateada.dt.strftime('%Y-%m')
+    fecha_fin_formateada = fecha_fin_formateada.dt.strftime('%Y-%m')
 
-        kpis = {
-            "vert_total_mwh": fmt_int(vert_total),         #Vertimientos totales
-            "vert_prom_mensual_mwh": fmt_int(vert_prom),   #Promedio mensual de energia vertida
-            "vert_max_mensual_mwh": fmt_int(vert_max),     #Vertimiento maximo mensual
-            "vert_max_mensual_periodo": vert_max_periodo,  #Mes en el que se produjo el máximo vertimiento
-            "cmg_promedio": fmt_float(cmg_prom),           #Costo marginal promedio
-            "cmg_max_mensual": fmt_float(cmg_max),         #Costo marginal maximo por mes
-            "cmg_max_mensual_periodo": cmg_max_periodo,    #Costos marginal maximo en el periodo de estudio
-            "empresa_vert_max":empresa_vert_max,             #Empresa que presenta el maximo vertimiento acumulado     
-            "periodo_empresa_max":periodo_empresa_max,       #Periodo en el que empresa_vert_max presente mayores vertimientos
-            "vert_empresa_vert_max": vert_empresa_vert_max,   #Cantidad de energia vertida por empresa_vert_max
-            #"vert_empresa_vert_max_pct" :vert_empresa_vert_max_pct                  # porción de la energía vertida por la empresa respecto del total vertido
-            #"cmg_spread_max"                              #spread maximo 
-            #"dia_cmg_spread_max_periodo"                  # Día en el que se produce el spread máximo
-            #"barra_cmg_spread_max"                        #Barra en la que se genera el spread máximo
-        }
+    periodo_estudio= f"{fecha_inicio_formateada} → {fecha_fin_formateada}"
+    insertar_periodo_estudio(PPT_PATH,periodo_estudio)   
 
-        # =========================
-        # 4) Tablas HTML
-        # =========================
-        tabla_max = df_maximos.copy()
-        tabla_acum = df_max_acum.copy()
 
-        tabla_max["vertimiento_max_kwh"] = tabla_max["vertimiento_max_kwh"].map(fmt_int)
-        tabla_acum["vertimiento_acumulado_kwh"] = tabla_acum["vertimiento_acumulado_kwh"].map(fmt_int)
 
-        tables_html = {
-            "maximos": tabla_max.to_html(index=False, escape=True, classes="tbl", border=0),
-            "acumulados": tabla_acum.to_html(index=False, escape=True, classes="tbl", border=0),
-        }
+    # ==========================================================
+    # 5) Exportar ppt a pdf para distribución final
+    # ========================================================== 
+
+    exportar_ppt_a_pdf(PPT_PATH, PDF_PATH)
+
 
 if __name__ == "__main__":
     # Fechas originales como string
@@ -353,4 +407,4 @@ if __name__ == "__main__":
     print("Fecha comparación fin:", fecha_comparacion_fin)
 
 
-    main(fecha_inicio,fecha_fin)
+    main(fecha_inicio,fecha_fin, fecha_comparacion_inicio, fecha_comparacion_fin)

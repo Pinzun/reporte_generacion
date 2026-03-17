@@ -3,12 +3,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter
 import geopandas as gpd
-# NUEVO: seaborn para estética
+from utils.inserta_texto_ppt import insertar_top_vertimiento
 import seaborn as sns
 from matplotlib.lines import Line2D
 from matplotlib.colors import LinearSegmentedColormap
 import numpy as np
+from pptx import Presentation
+import matplotlib.font_manager as fm
 
+def _registrar_fuente():
+    plt.rcParams["font.family"]="Candara"
+    print("[OK] Usando fuente Candara")
+
+FONT_COLOR = "#003366"
 
 SHP_REGIONES = r"C:\Users\pinzunza\OneDrive - Ministerio de Energia\Escritorio\escritorio desrodenado\capas\Comunas\COMUNAS_NACIONAL.shp"
 BAR_POINTS = {
@@ -39,13 +46,20 @@ BAR_POINTS = {
     }
 }
 
+# Helper para conocer indice de shapes
+def listar_shapes(pptx_path, slide_idx):
+    prs = Presentation(pptx_path)
+    slide = prs.slides[slide_idx]
+    for i, shape in enumerate(slide.shapes):
+        tipo = "TABLA" if shape.has_table else shape.shape_type
+        print(f"  [{i}] nombre='{shape.name}'  tipo={tipo}")
+
 
 def _fmt_thousands(x, pos):
     try:
         return f"{x:,.0f}".replace(",", ".")
     except Exception:
         return str(x)
-
 
 def _guardar_fig(fig, path, dpi=130):
     ext = os.path.splitext(path)[1].lower()
@@ -54,10 +68,10 @@ def _guardar_fig(fig, path, dpi=130):
     - DPI moderado (no necesitas 220+)
     - tight_layout para reducir blancos, pero sin inflar tanto el canvas
     """
-    try:
-        fig.tight_layout()
-    except Exception:
-        pass
+    #try:
+    #    fig.tight_layout()
+    #except Exception:
+    #    pass
 
     if ext == ".svg":
         fig.savefig(path, format="svg", bbox_inches="tight")
@@ -66,33 +80,52 @@ def _guardar_fig(fig, path, dpi=130):
     plt.close(fig)
 
 
-def _render_table_image(df, title, outpath, dpi=150, max_rows=25):
+def render_table_image(df, title, out_path, dpi=130, top=10):
     """
-    Renderiza un DataFrame como imagen usando matplotlib.table.
-    Ajustado para que NO salga gigante en HTML/PDF.
-    - max_rows menor
-    - tamaños acotados
-    - dpi moderado
+    Renderiza un DataFrame como imagen con estilo visual consistente
+    con graficar_inyectada_vertida (Mercados Mayoristas).
     """
-    df_show = df.copy()
+    # ── Paleta alineada con el gráfico de referencia ──────────────────
+    COLOR_HEADER_BG = "#F6C48E"   # naranjo pastel (mismo que color_inyectado)
+    COLOR_HEADER_FG = "#1A1A1A"   # texto oscuro sobre fondo claro
+    COLOR_ROW_ODD   = "#FFFFFF"
+    COLOR_ROW_EVEN  = "#F5F8FC"   # gris-azulado muy suave
+    COLOR_BORDER    = "#E0E0E0"
+    FONT_FAMILY     = "Candara"
 
+    # ── Preparar datos ────────────────────────────────────────────────
+    df_show = df.copy()
     for col in df_show.columns:
         if pd.api.types.is_numeric_dtype(df_show[col]):
             df_show[col] = df_show[col].map(
                 lambda v: f"{v:,.0f}".replace(",", ".") if pd.notnull(v) else ""
             )
-
-    if len(df_show) > max_rows:
-        df_show = df_show.head(max_rows)
+    if len(df_show) > top:
+        df_show = df_show.head(top)
 
     nrows, ncols = df_show.shape
-    fig_w = min(12, max(8.5, ncols * 1.25))
-    fig_h = min(8.0, max(2.8, 0.28 * (nrows + 2)))
+
+    # ── Dimensiones — mismo ancho de referencia (8.2) ─────────────────
+    fig_w = 8.2
+    row_height = 0.32
+    fig_h = (nrows + 2) * row_height + 0.4
 
     fig, ax = plt.subplots(figsize=(fig_w, fig_h))
     ax.axis("off")
-    ax.set_title(title, fontsize=12, fontweight="bold", pad=8)
+    fig.patch.set_facecolor("#FFFFFF")
 
+    # ── Título — misma tipografía y tamaño que el gráfico ─────────────
+    ax.set_title(
+        title,
+        fontsize=12,
+        fontweight="bold",
+        color="#1A1A1A",
+        fontfamily=FONT_FAMILY,
+        pad=3,
+        loc="center",
+    )
+
+    # ── Tabla ─────────────────────────────────────────────────────────
     table = ax.table(
         cellText=df_show.values,
         colLabels=df_show.columns.tolist(),
@@ -102,17 +135,38 @@ def _render_table_image(df, title, outpath, dpi=150, max_rows=25):
     )
 
     table.auto_set_font_size(False)
-    table.set_fontsize(8.5)
-    table.scale(1, 1.05)
+    table.set_fontsize(8)        # mismo que tick labels del gráfico
+    table.scale(1, 1.35)
 
+    # ── Estilos celda a celda ─────────────────────────────────────────
     for (r, c), cell in table.get_celld().items():
-        if r == 0:
-            cell.set_facecolor("#E6E6E6")
-            cell.set_text_props(weight="bold")
-        else:
-            cell.set_facecolor("#FFFFFF" if r % 2 else "#F7F7F7")
+        cell.set_linewidth(0.4)
+        cell.set_edgecolor(COLOR_BORDER)
 
-    _guardar_fig(fig, outpath, dpi=dpi)
+        if r == 0:
+            cell.set_facecolor(COLOR_HEADER_BG)
+            cell.set_text_props(
+                weight="bold",
+                color=COLOR_HEADER_FG,
+                fontfamily=FONT_FAMILY,
+                fontsize=8,
+            )
+        else:
+            bg = COLOR_ROW_ODD if r % 2 else COLOR_ROW_EVEN
+            cell.set_facecolor(bg)
+            cell.set_text_props(
+                color="#1A1A1A",
+                fontfamily=FONT_FAMILY,
+                fontsize=8,
+            )
+
+    table.auto_set_column_width(col=list(range(ncols)))
+
+    # ── Márgenes — misma lógica que subplots_adjust del gráfico ───────
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.88, bottom=0.02)
+
+    fig.savefig(out_path, dpi=dpi, bbox_inches="tight", pad_inches=0.05)
+    plt.close(fig)
 
 def generar_mapa_regiones(shp_path, target_crs="EPSG:32719"):
     import geopandas as gpd
@@ -139,46 +193,125 @@ def generar_mapa_regiones(shp_path, target_crs="EPSG:32719"):
 
     return gdf
 
-def graficar_cmg_con_mapa(df_cmg, df_cmg_comparacion, gdf_reg, bar_points, out_path, dpi=130):
+def graficar_cmg_con_mapa(
+    df_cmg,
+    df_cmg_comparacion,
+    gdf_reg,
+    bar_points,
+    out_path,
+    dpi=130
+):
+    import calendar
+
     df_c = df_cmg.copy()
     df_c["fecha_hora"] = pd.to_datetime(df_c["fecha_hora"], errors="coerce")
     df_c = df_c.dropna(subset=["fecha_hora", "CMG_PESO_KWH", "nombre_cmg"]).copy()
-    df_c = df_c.sort_values("fecha_hora")
 
-    # Tamaño compacto pensado para card horizontal
-    fig, ax = plt.subplots(figsize=(7.2, 3.2))
+    df_comp = df_cmg_comparacion.copy()
+    df_comp["fecha_hora"] = pd.to_datetime(df_comp["fecha_hora"], errors="coerce")
+    df_comp = df_comp.dropna(subset=["fecha_hora", "CMG_PESO_KWH", "nombre_cmg"]).copy()
 
-    # Inset del mapa más pequeño y menos invasivo
-    ax_map = fig.add_axes([0.9, 0.34, 0.16, 0.6])
-    ax_map.grid(False)
+    if df_c.empty and df_comp.empty:
+        fig, ax = plt.subplots(figsize=(7.2, 3.2))
+        ax.text(0.5, 0.5, "Sin datos para gráfico CMG", ha="center", va="center", fontsize=11)
+        ax.axis("off")
+        _guardar_fig(fig, out_path, dpi=dpi)
+        return
 
-    # -------------------------
-    # Paleta fija por barra
-    # -------------------------
-    barras = sorted(df_c["nombre_cmg"].dropna().unique())
+    # Año principal y comparación para leyenda
+    anio_estudio = str(df_c["fecha_hora"].dt.year.mode().iloc[0]) if not df_c.empty else "Año estudio"
+    anio_comparacion = str(df_comp["fecha_hora"].dt.year.mode().iloc[0]) if not df_comp.empty else "Año anterior"
+
+    # Mes común 1..12
+    for df_ in [df_c, df_comp]:
+        if not df_.empty:
+            df_["mes_num"] = df_["fecha_hora"].dt.month
+
+    # Asegurar agregación mensual por barra
+    if not df_c.empty:
+        df_c = (
+            df_c.groupby(["mes_num", "nombre_cmg"], as_index=False)["CMG_PESO_KWH"]
+            .mean()
+            .sort_values(["nombre_cmg", "mes_num"])
+        )
+
+    if not df_comp.empty:
+        df_comp = (
+            df_comp.groupby(["mes_num", "nombre_cmg"], as_index=False)["CMG_PESO_KWH"]
+            .mean()
+            .sort_values(["nombre_cmg", "mes_num"])
+        )
+
+    barras = sorted(
+        set(df_c["nombre_cmg"].dropna().unique()).union(
+            set(df_comp["nombre_cmg"].dropna().unique())
+        )
+    )
+
     palette = sns.color_palette("pastel", n_colors=len(barras))
     color_map = dict(zip(barras, palette))
 
+    fig, ax = plt.subplots(figsize=(7.2, 3.2))
+
+    # Inset mapa
+    # add_axes([x0, y0, width, height]) posiciona un subplot dentro de la figura
+    # - x0: posición horizontal inicial (0 = borde izquierdo, 1 = borde derecho)
+    # - y0: posición vertical inicial (0 = borde inferior, 1 = borde superior)
+    # - width: ancho relativo respecto al total de la figura
+    # - height: alto relativo respecto al total de la figura
+    # En este caso, el eje se coloca casi al borde derecho (x0=0.95),
+    # comenzando a mitad de la altura (y0=0.5), con un ancho del 16% y alto del 60%.
+    ax_map = fig.add_axes([1.03, 0.2, 0.16, 0.6])
+
+    ax_map.grid(False)
+
     # -------------------------
-    # Lineplot
+    # Líneas año estudio (sólidas)
     # -------------------------
-    sns.lineplot(
-        data=df_c,
-        x="fecha_hora",
-        y="CMG_PESO_KWH",
-        hue="nombre_cmg",
-        hue_order=barras,
-        palette=color_map,
-        ax=ax,
-        linewidth=1.8,
-        estimator=None,
-        legend=False,
-    )
+    for barra in barras:
+        g = df_c[df_c["nombre_cmg"] == barra].copy()
+        if g.empty:
+            continue
+
+        ax.plot(
+            g["mes_num"],
+            g["CMG_PESO_KWH"],
+            linestyle="-",
+            linewidth=1.8,
+            color=color_map[barra],
+            alpha=0.95,
+            zorder=3,
+        )
+
+    # -------------------------
+    # Líneas año comparación (punteadas)
+    # -------------------------
+    for barra in barras:
+        g = df_comp[df_comp["nombre_cmg"] == barra].copy()
+        if g.empty:
+            continue
+
+        ax.plot(
+            g["mes_num"],
+            g["CMG_PESO_KWH"],
+            linestyle="--",
+            linewidth=1.5,
+            color=color_map[barra],
+            alpha=0.95,
+            zorder=2,
+        )
+
+    # Etiquetas eje X
+    meses = np.arange(1, 13)
+    meses_label = [calendar.month_abbr[m] for m in meses]
+
+    ax.set_xticks(meses)
+    ax.set_xticklabels(meses_label, fontsize=8)
+    ax.set_xlim(1, 12)
 
     ax.set_title("Costo marginal promedio por mes ($/kWh)", fontsize=11, fontweight="bold")
     ax.set_xlabel("")
     ax.set_ylabel("CMG ($/kWh)", fontsize=9)
-    ax.tick_params(axis="x", rotation=45, labelsize=8)
     ax.tick_params(axis="y", labelsize=8)
     ax.grid(False)
     ax.yaxis.grid(True, alpha=0.18, linewidth=0.8)
@@ -256,9 +389,9 @@ def graficar_cmg_con_mapa(df_cmg, df_cmg_comparacion, gdf_reg, bar_points, out_p
         spine.set_linewidth(0.7)
 
     # -------------------------
-    # Leyenda compacta abajo-izquierda
+    # Leyenda colores barras
     # -------------------------
-    handles = [
+    handles_barras = [
         Line2D(
             [0], [0],
             color=color_map[b],
@@ -272,8 +405,8 @@ def graficar_cmg_con_mapa(df_cmg, df_cmg_comparacion, gdf_reg, bar_points, out_p
         for b in barras
     ]
 
-    leg = ax.legend(
-        handles=handles,
+    leg1 = ax.legend(
+        handles=handles_barras,
         title="Barras CMG",
         loc="lower left",
         fontsize=7,
@@ -282,7 +415,28 @@ def graficar_cmg_con_mapa(df_cmg, df_cmg_comparacion, gdf_reg, bar_points, out_p
         ncol=2,
         borderaxespad=0.6
     )
-    leg.get_frame().set_alpha(0.9)
+    leg1.get_frame().set_alpha(0.9)
+    ax.add_artist(leg1)
+
+    # -------------------------
+    # Leyenda estilos de línea
+    # -------------------------
+    handles_estilo = [
+        Line2D([0], [0], color="#667085", linewidth=1.8, linestyle="-", label=anio_estudio),
+        Line2D([0], [0], color="#667085", linewidth=1.5, linestyle="--", label=anio_comparacion),
+    ]
+
+    leg2 = ax.legend(
+        handles=handles_estilo,
+        title="Período",
+        loc="upper left",
+        fontsize=7,
+        title_fontsize=8,
+        frameon=True,
+        ncol=1,
+        borderaxespad=0.6
+    )
+    leg2.get_frame().set_alpha(0.9)
 
     fig.subplots_adjust(left=0.08, right=0.98, top=0.84, bottom=0.24)
 
@@ -465,7 +619,6 @@ def graficar_gx_tipico(df_dia_tipico, out_path, dpi=130):
 
     _guardar_fig(fig, out_path, dpi=dpi)    
 
-
 def graficar_spread_cmg(df_spread: pd.DataFrame, out_path: str, dpi: int = 130):
     """
     Grafica barras agrupadas por nombre_cmg:
@@ -546,8 +699,6 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
     # ==========================================================
     # 1) Boxplot + Lineplot (doble eje Y, línea pastel detrás)
     # ==========================================================
-    print("df a partir del que se generan los gráficos de vertimientos")
-    print (df_all.head())
     df_box = df_all.copy()
     df_box["periodo"] = pd.to_datetime(df_box["periodo"], errors="coerce").dt.strftime("%Y-%m")
     df_box["periodo"] = df_box["periodo"].astype(str)
@@ -645,6 +796,71 @@ def graficar_boxplot_vertimientos_con_total(df_all, out_path, dpi=130):
     fig.subplots_adjust(left=0.06, right=0.96, top=0.88, bottom=0.20)  
     _guardar_fig(fig, out_path, dpi=dpi)
 
+def graficar_inyectada_vertida(df_gx_ver_iny, out_path, dpi=130):
+    # Validar columnas requeridas
+    columnas_requeridas = {"periodo", "inyeccion", "vertimiento"}
+    faltantes = columnas_requeridas - set(df_gx_ver_iny.columns)
+    if faltantes:
+        raise ValueError(f"Faltan columnas requeridas en df_gx_ver_iny: {sorted(faltantes)}")
+
+    df_plot = df_gx_ver_iny.copy()
+
+    # Ordenar por periodo
+    df_plot = df_plot.sort_values("periodo", ascending=True).reset_index(drop=True)
+
+    x = np.arange(len(df_plot))
+    width = 0.55  # un poco más ancho ya que no hay separación
+
+    fig, ax = plt.subplots(figsize=(8.2, 4.2))
+
+    color_inyectado = "#F6C48E"   # naranjo pastel
+    color_vertido   = "#8EC5FF"   # azul pastel
+
+    # Barra inferior: inyecciones
+    ax.bar(
+        x,
+        df_plot["inyeccion"],
+        width=width,
+        label="Inyecciones",
+        color=color_inyectado,
+        edgecolor="white",
+        linewidth=0.8,
+    )
+
+    # Barra superior: vertimientos (apilada sobre inyecciones)
+    ax.bar(
+        x,
+        df_plot["vertimiento"],
+        width=width,
+        bottom=df_plot["inyeccion"],
+        label="Vertimientos",
+        color=color_vertido,
+        edgecolor="white",
+        linewidth=0.8,
+    )
+
+    ax.set_title("Energía inyectada y energía vertida por periodo", fontsize=12, fontweight="bold")
+    ax.set_xlabel("Periodo", fontsize=10)
+    ax.set_ylabel("Energía kWh", fontsize=10)
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(df_plot["periodo"], rotation=35, ha="right", fontsize=8)
+    ax.tick_params(axis="y", labelsize=8)
+
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v, p: f"{v:,.0f}".replace(",", ".")))
+
+    ax.grid(True, axis="y", alpha=0.18)
+    ax.grid(False, axis="x")
+    sns.despine(ax=ax, top=True, right=True)
+
+    leg = ax.legend(frameon=True, fontsize=8)
+    leg.get_frame().set_alpha(0.9)
+
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.87, bottom=0.28)
+
+    plt.savefig(out_path, dpi=dpi)
+    plt.close(fig)
+
 
 def generar_graficas(
     df_vertimientos,
@@ -653,6 +869,9 @@ def generar_graficas(
     df_cmg,
     df_cmg_comparacion,
     df_dia_tipico,
+    df_gx_ver_iny,
+    ppt_path,
+    df_top_vertimiento,
     outdir="outputs",
     dpi=130,
             ):
@@ -666,6 +885,7 @@ def generar_graficas(
         style="whitegrid",
         context="notebook",
         rc={
+            "font.family": plt.rcParams["font.family"],
             "axes.titlesize": 13,
             "axes.titleweight": "bold",
             "axes.labelsize": 10,
@@ -678,6 +898,10 @@ def generar_graficas(
             "axes.facecolor": "white",
             "legend.frameon": True,
             "legend.framealpha": 0.9,
+            "text.color":         FONT_COLOR,
+            "axes.labelcolor":    FONT_COLOR,
+            "xtick.color":        FONT_COLOR,
+            "ytick.color":        FONT_COLOR,
         },
     )
 
@@ -734,6 +958,7 @@ def generar_graficas(
     # ==========================================================
     # 4) Spread CMG
     # ========================================================== 
+    df_spread["nombre_cmg"] = df_spread["nombre_cmg"].replace(rename_map)
 
     graficar_spread_cmg(
         df_spread=df_spread,
@@ -741,4 +966,21 @@ def generar_graficas(
         dpi=dpi
     )
 
+    # ==========================================================
+    # 5) Energía inyectada vs vertida
+    # ========================================================== 
+
+    graficar_inyectada_vertida(
+        df_gx_ver_iny=df_gx_ver_iny,
+        out_path=os.path.join(outdir, "inyec_vert.svg"),
+        dpi=dpi
+    )
+
+
+    # ==========================================================
+    # 6) Tabla vertimientos
+    # ========================================================== 
+    
+    #Lista shapes de ppt 
+    insertar_top_vertimiento(ppt_path,3, df_top_vertimiento=df_top_vertimiento)
 

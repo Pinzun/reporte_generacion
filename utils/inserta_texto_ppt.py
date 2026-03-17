@@ -1,0 +1,90 @@
+from pptx import Presentation
+from pptx.util import Pt
+import pandas as pd
+from pathlib import Path
+import comtypes.client
+import os
+
+# ==========================================================
+# Helpers
+# ========================================================== 
+def set_textbox_text(slide, nombre, texto):
+    for shape in slide.shapes:
+        if shape.name == nombre:
+            for para in shape.text_frame.paragraphs:
+                for run in para.runs:
+                    run.text = texto
+                    return
+
+def get_shape_by_name(slide, nombre):
+    for shape in slide.shapes:
+        if shape.name == nombre:
+            return shape
+    return None
+
+def exportar_ppt_a_pdf(pptx_path, pdf_path):
+    pptx_path = os.path.abspath(pptx_path)
+    pdf_path  = os.path.abspath(pdf_path)
+
+    powerpoint = comtypes.client.CreateObject("Powerpoint.Application")
+    powerpoint.Visible = 1
+
+    try:
+        prs = powerpoint.Presentations.Open(pptx_path)
+        prs.SaveAs(pdf_path, 32)  # 32 = ppSaveAsPDF
+        prs.Close()
+    finally:
+        powerpoint.Quit()
+
+
+# ==========================================================
+# Funciones
+# ========================================================== 
+
+def insertar_top_vertimiento(ppt_path: Path,slide_idx, df_top_vertimiento=pd.DataFrame, top=10) -> pd.DataFrame:
+    #Esta función abre el ppt e inserta las filas del df vertimiento en la tabla correspondiente del reporte
+    # slide_idx: índice de la diapositiva
+    # shape_idx_ indice del shape que contiene la tabla 
+
+    # Importa la ppt y define el número de slide
+    prs= Presentation(ppt_path)
+    slide=prs.slides[slide_idx]
+
+    #Obtiene el shape que contiene la tabla
+    shape=get_shape_by_name(slide,"tabla_top")
+
+    
+    table=shape.table
+    #Formateo numéricos
+    for col in df_top_vertimiento.columns:
+        if pd.api.types.is_numeric_dtype(df_top_vertimiento[col]):
+            df_top_vertimiento[col] = df_top_vertimiento[col].map(
+                lambda v: f"{v:,.0f}".replace(",",".") if 
+                pd.notnull(v) else ""
+            )    
+
+    # Escribir fila por fila, columna por columna
+    # row 0 generalmente es el encabezado — los datos van desde row 1
+    for row_idx, row_data in enumerate(df_top_vertimiento.itertuples(index=False), start=1):
+        if row_idx >= len(table.rows):
+            break  # no exceder las filas existentes en la tabla
+        for col_idx, value in enumerate(row_data):
+            cell = table.cell(row_idx, col_idx)
+            cell.text = str(value)
+            
+            # Preservar tamaño de fuente del formato original
+            for para in cell.text_frame.paragraphs:
+                for run in para.runs:
+                    run.font.size = Pt(7)
+
+    prs.save(ppt_path)
+    print(f"Modifcado en {ppt_path}")
+
+
+def insertar_periodo_estudio(ppt_path: Path, periodo_estudio: str):
+    prs = Presentation(ppt_path)
+    # Recorre todas las slides y aplica la función
+    [set_textbox_text(slide, "periodo_estudio", periodo_estudio) for slide in prs.slides]
+    prs.save(ppt_path)
+
+    
