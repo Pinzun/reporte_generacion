@@ -5,7 +5,7 @@ from utils.db_utils import open_connection, close_connection
 # =========================================================
 # Extrae datos de vertimientos
 # =========================================================
-def extrae_data_total_vertimientos(batch_size=2400000,fecha_inicio=None, fecha_fin=None,fecha_comparacion_inicio=None,fecha_comparacion_fin=None):
+def extrae_data_total_vertimientos(batch_size=4800000,fecha_inicio=None, fecha_fin=None,fecha_comparacion_inicio=None,fecha_comparacion_fin=None):
     #Extrae datos de estudio
     conn, ssh_client, stop_event = open_connection()
 

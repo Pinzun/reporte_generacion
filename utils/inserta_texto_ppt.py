@@ -75,7 +75,7 @@ def insertar_top_vertimiento(ppt_path: Path,slide_idx, df_top_vertimiento=pd.Dat
             # Preservar tamaño de fuente del formato original
             for para in cell.text_frame.paragraphs:
                 for run in para.runs:
-                    run.font.size = Pt(7)
+                    run.font.size = Pt(9)
 
     prs.save(ppt_path)
     print(f"Modifcado en {ppt_path}")
@@ -87,4 +87,65 @@ def insertar_periodo_estudio(ppt_path: Path, periodo_estudio: str):
     [set_textbox_text(slide, "periodo_estudio", periodo_estudio) for slide in prs.slides]
     prs.save(ppt_path)
 
-    
+def insertar_texto_con_placeholders(ppt_path: Path, kpis: dict) -> None:
+    """
+    Reemplaza placeholders tipo {{kpis.nombre}} preservando formato.
+    Maneja placeholders partidos entre múltiples runs.
+    """
+    from pptx.util import Pt
+    import copy
+
+    prs = Presentation(ppt_path)
+
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if not shape.has_text_frame:
+                continue
+            for para in shape.text_frame.paragraphs:
+                if not para.runs:
+                    continue
+
+                # Reconstruir texto completo del párrafo
+                texto_completo = "".join(run.text for run in para.runs)
+
+                # Verificar si hay algún placeholder en este párrafo
+                tiene_placeholder = any(
+                    f"{{{{kpis.{key}}}}}" in texto_completo
+                    for key in kpis
+                )
+                if not tiene_placeholder:
+                    continue
+
+                # Reemplazar todos los placeholders
+                for key, valor in kpis.items():
+                    placeholder = f"{{{{kpis.{key}}}}}"
+                    texto_completo = texto_completo.replace(placeholder, str(valor))
+
+                # Preservar formato del primer run y escribir texto completo
+                run0 = para.runs[0]
+                fmt  = {
+                    "bold":      run0.font.bold,
+                    "italic":    run0.font.italic,
+                    "size":      run0.font.size,
+                    "color":     run0.font.color.rgb if run0.font.color and run0.font.color.type else None,
+                    "underline": run0.font.underline,
+                    "name":      run0.font.name,
+                }
+
+                run0.text = texto_completo
+
+                # Reaplicar formato al run0
+                run0.font.bold      = fmt["bold"]
+                run0.font.italic    = fmt["italic"]
+                run0.font.size      = fmt["size"]
+                run0.font.underline = fmt["underline"]
+                run0.font.name      = fmt["name"]
+                if fmt["color"]:
+                    run0.font.color.rgb = fmt["color"]
+
+                # Limpiar runs restantes
+                for run in para.runs[1:]:
+                    run.text = ""
+
+    prs.save(ppt_path)
+    print(f"Texto insertado en {ppt_path}")
