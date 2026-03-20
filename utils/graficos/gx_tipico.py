@@ -16,8 +16,8 @@ def graficar_gx_tipico(df_dia_tipico, dia_tipico_comparacion,
                         out_path, figsize=(10.74, 5.02), font_scale=1.0, dpi=300):
 
     # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_title  = round(10 * font_scale)
-    fs_label  = round(9  * font_scale)
+    fs_title  = round(12 * font_scale)
+    fs_label  = round(10  * font_scale)
     fs_tick   = round(8  * font_scale)
     fs_fecha  = round(8  * font_scale)
     fs_leg    = round(8  * font_scale)
@@ -111,9 +111,10 @@ def graficar_gx_tipico(df_dia_tipico, dia_tipico_comparacion,
     pivot_est  = _construir_pivot(_preparar_df(df_dia_tipico))
     pivot_comp = _construir_pivot(_preparar_df(dia_tipico_comparacion))
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize, sharey=True)
-    _dibujar_areas(ax1, pivot_est,  f"Fecha de referencia: {fecha_tipica}")
+    fig, (ax2, ax1) = plt.subplots(1, 2, figsize=figsize, sharey=True)
     _dibujar_areas(ax2, pivot_comp, f"Fecha de referencia: {fecha_tipica_comparacion}")
+    _dibujar_areas(ax1, pivot_est,  f"Fecha de referencia: {fecha_tipica}")
+
 
     handles, labels = ax1.get_legend_handles_labels()
     if not handles:

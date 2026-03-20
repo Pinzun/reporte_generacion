@@ -14,8 +14,8 @@ def graficar_evolucion_inyeccion_bess(df_gx_real, df_gx_real_comparacion, muted_
                                        out_path, figsize=(5.90, 4.14), font_scale=1.0, dpi=300):
 
     # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_title  = round(11 * font_scale)
-    fs_label  = round(9  * font_scale)
+    fs_title  = round(12 * font_scale)
+    fs_label  = round(10  * font_scale)
     fs_tick   = round(8  * font_scale)
     fs_leg    = round(8  * font_scale)
     fs_leg_t  = round(9  * font_scale)

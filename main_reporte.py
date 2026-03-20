@@ -12,7 +12,6 @@ from utils.extrae_data import (
     extrae_gx_real_comparacion
 )
 from utils.gestiona_graficos import generar_graficas
-from utils.exporta_excel import exporta_dfs_to_excel
 from utils.calcula_gx_tipico import gx_real_tipico
 from utils.calcula_spread_cmg import spread_cmg
 from utils.calcula_gx_inyectada_vertida import gx_ver_iny
@@ -36,9 +35,9 @@ PDF_PATH = OUT_DIR / "reporte_generacion.pdf"
 
 
 PDF_NAME = "reporte.pdf"
-DEV = True 
+DEV = False 
 GENERAR_PLANTILLA =True
-FECHA_ESTUDIO = "2025-12-31 23:45:00"   
+FECHA_ESTUDIO = "2026-01-31 23:45:00"   
 
 
 # -----------------------
@@ -349,9 +348,9 @@ def main(fecha_inicio, fecha_fin, fecha_comparacion_inicio, fecha_comparacion_fi
     kpis = {
         # Vertimientos
         "vert_total_mwh":                         fmt_int(vertimiento_total),
-        "vert_total_mwh_clave":                   f"{fmt_int(vertimiento_total)} mWh",
+        "vert_total_mwh_clave":                   f"{fmt_int(vertimiento_total)} MWh",
         "empresa_vert_max":                       empresa_vert_max,
-        "vert_empresa_vert_max":                  f"{fmt_int(fmt_int(vert_empresa_vert_max))} mWh",
+        "vert_empresa_vert_max":                  f"{fmt_int(fmt_int(vert_empresa_vert_max))} MWh",
         # CMG
         "cmg_promedio":                           fmt_float(cmg_prom),
         "cmg_promedio_clave":                     f"{fmt_float(cmg_prom)} $/kWh",

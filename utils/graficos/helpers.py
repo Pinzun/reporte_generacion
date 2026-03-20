@@ -141,3 +141,62 @@ def listar_shapes(pptx_path, slide_idx):
     for i, shape in enumerate(slide.shapes):
         tipo = "TABLA" if shape.has_table else shape.shape_type
         print(f"  [{i}] nombre='{shape.name}'  tipo={tipo}")
+
+def render_table_image(df, title, out_path, font_dict, font_family_dict, muted_dict, edge_color,
+                       figsize=(4.49, 3.68), font_scale=1.0, dpi=150, top=10):
+    """
+    Renderiza un DataFrame como imagen PNG con el estilo visual del reporte.
+    """
+    # ── Tamaños de fuente escalados ───────────────────────────────
+    fs_title  = round(11 * font_scale)
+    fs_cell   = round(8  * font_scale)
+
+    # ── Colores alineados con la paleta Muted ─────────────────────
+    COLOR_HEADER_BG = muted_dict["c1"]
+    COLOR_HEADER_FG = font_dict
+    COLOR_ROW        = "#FFFFFF"
+    COLOR_BORDER     = edge_color
+
+    df_show = df.copy()
+    for col in df_show.columns:
+        if pd.api.types.is_numeric_dtype(df_show[col]):
+            df_show[col] = df_show[col].map(
+                lambda v: f"{v:,.0f}".replace(",", ".") if pd.notnull(v) else ""
+            )
+    if len(df_show) > top:
+        df_show = df_show.head(top)
+
+    nrows, ncols = df_show.shape
+
+    fig, ax = plt.subplots(figsize=figsize)
+    ax.axis("off")
+    fig.patch.set_facecolor("none")
+
+    ax.set_title(title, fontsize=fs_title, fontweight="bold", color=font_dict,
+                 fontfamily=font_family_dict, pad=6, loc="center")
+
+    table = ax.table(
+        cellText=df_show.values,
+        colLabels=df_show.columns.tolist(),
+        loc="center",
+        cellLoc="center",
+        colLoc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(fs_cell)
+    table.scale(1, 1.4)
+
+    for (r, c), cell in table.get_celld().items():
+        cell.set_linewidth(0.4)
+        cell.set_edgecolor(COLOR_BORDER)
+        if r == 0:
+            cell.set_facecolor(COLOR_HEADER_BG)
+            cell.set_text_props(weight="bold", color=COLOR_HEADER_FG,
+                                fontfamily=font_family_dict, fontsize=fs_cell)
+        else:
+            cell.set_facecolor(COLOR_ROW)
+            cell.set_text_props(color=font_dict, fontfamily=font_family_dict, fontsize=fs_cell)
+
+    table.auto_set_column_width(col=list(range(ncols)))
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.88, bottom=0.02)
+    _guardar_fig(fig, out_path, dpi=dpi)

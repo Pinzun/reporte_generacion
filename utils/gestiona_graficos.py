@@ -10,6 +10,7 @@ from .graficos.evolucion_vertimientos import graficar_evolucion_vertimiento
 from .graficos.gx_tipico import graficar_gx_tipico
 from .graficos.spread_cmg import graficar_spread_cmg
 from utils.insercion_graficos import insertar_graficos_ppt, get_figsize, TARGET_DPI
+from .graficos.helpers import render_table_image
 
 #HELPER
 from .graficos.helpers import _setup_theme
@@ -111,6 +112,11 @@ def generar_graficas(
     )
 
     # ── 2) Día típico ─────────────────────────────────────────────────────────
+
+    print(f"fecha_tipica: {fecha_tipica}")
+    print(f"fecha_tipica_comparacion: {fecha_tipica_comparacion}")
+    print(f"df_dia_tipico shape: {df_dia_tipico.shape}")
+    print(f"df_dia_tipico_comparacion shape: {df_dia_tipico_comparacion.shape}")
     graficar_gx_tipico(
         df_dia_tipico=df_dia_tipico,
         dia_tipico_comparacion=df_dia_tipico_comparacion,
@@ -204,13 +210,27 @@ def generar_graficas(
         out_path=os.path.join(outdir, "evolucion_vertimiento.png"),
         figsize=get_figsize("img_evolucion_vertimientos"),
         font_scale=font_scale, dpi=dpi,
-    )
+    )  
 
-    # ── 8) Tabla top vertimientos ─────────────────────────────────────────────
+
+    # ── 8) Tabla top vertimientos ─────────────────────────────────
     df_top_vertimiento["nombre_central"] = df_top_vertimiento["nombre_central"].str.replace("Pfv", "", regex=False)
     df_top_vertimiento["nombre_central"] = df_top_vertimiento["nombre_central"].str.replace("PFV", "", regex=False)
-    print(df_top_vertimiento.head())
-    insertar_top_vertimiento(ppt_path, 2, df_top_vertimiento=df_top_vertimiento)
+
+    render_table_image(
+        df=df_top_vertimiento,
+        title="Top vertimientos por central",
+        out_path=os.path.join(outdir, "tabla_top.png"),
+        font_dict=FONT_COLOR,
+        font_family_dict=FONT_FAMILY,
+        muted_dict=MUTED,
+        edge_color=EDGE_COLOR,
+        figsize=get_figsize("tabla_top"),
+        font_scale=font_scale,
+        dpi=TARGET_DPI,
+)
+
+    #insertar_top_vertimiento(ppt_path, 2, df_top_vertimiento=df_top_vertimiento)
 
     # ── 9) Insertar todas las imágenes en el PPT ──────────────────────────────
     insertar_graficos_ppt(ppt_path, outdir)

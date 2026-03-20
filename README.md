@@ -132,14 +132,15 @@ El período de comparación se calcula automáticamente como un año antes.
 
 ## Gráficos generados
 
-| Archivo                     | Descripción                                             | Placeholder PPT                |
-| --------------------------- | ------------------------------------------------------- | ------------------------------ |
-| `cmg.png`                   | CMG mensual por barra con mapa de Chile                 | `img_cmg`                      |
-| `gx_tipico.png`             | Generación diaria típica (áreas apiladas, dos períodos) | `img_dia_tipico`               |
-| `spread_cmg.png`            | Spread CMG horas solares vs no solares                  | `img_spread`                   |
-| `inyec_vert.png`            | Energía inyectada vs vertida por período                | `img_inyecciones_vertimientos` |
-| `inyecciones_bess.png`      | Evolución trimestral inyección BESS                     | `img_inyeccion_bess`           |
-| `evolucion_vertimiento.png` | Evolución trimestral vertimientos                       | `img_evolucion_vertimientos`   |
+| Archivo                     | Descripción                                                    | Placeholder PPT                |
+| --------------------------- | -------------------------------------------------------------- | ------------------------------ |
+| `cmg.png`                   | CMG mensual por barra con mapa de Chile                        | `img_cmg`                      |
+| `gx_tipico.png`             | Generación diaria típica (áreas apiladas, dos períodos)        | `img_dia_tipico`               |
+| `spread_cmg.png`            | Spread CMG horas solares vs no solares                         | `img_spread`                   |
+| `inyec_vert.png`            | Energía inyectada vs vertida por período                       | `img_inyecciones_vertimientos` |
+| `inyecciones_bess.png`      | Evolución trimestral inyección BESS                            | `img_inyeccion_bess`           |
+| `evolucion_vertimiento.png` | Evolución trimestral vertimientos                              | `img_evolucion_vertimientos`   |
+| `tabla_top.png`             | Tabla con empresas que presentaron mayor vertimiento acumulado | `tabla_top`                    |
 
 ---
 
@@ -220,5 +221,5 @@ Al finalizar la ejecución se generan dos archivos en `data/processed/reports/`:
 ## Notas de desarrollo
 
 - El modo `DEV = True` evita consultas a la base de datos usando los CSVs de la última extracción.
-- El DPI de exportación de imágenes es `150` por defecto, calibrado para que las imágenes encajen exactamente en los placeholders sin escalado.
+- El DPI de exportación de imágenes es `300` por defecto, calibrado para que las imágenes encajen exactamente en los placeholders sin escalado.
 - El pipeline siempre parte desde `template_reporte.pptx` limpio — nunca acumula elementos de ejecuciones anteriores.

@@ -3,7 +3,6 @@ from pptx import Presentation
 from pathlib import Path
 
 
-# ── Mapeo placeholder → archivo generado por generar_graficas() ──────────────
 PLACEHOLDER_IMG_MAP = {
     "img_cmg":                      "cmg.png",
     "img_dia_tipico":               "gx_tipico.png",
@@ -11,20 +10,21 @@ PLACEHOLDER_IMG_MAP = {
     "img_inyecciones_vertimientos": "inyec_vert.png",
     "img_inyeccion_bess":           "inyecciones_bess.png",
     "img_evolucion_vertimientos":   "evolucion_vertimiento.png",
+    "tabla_top":                    "tabla_top.png",   
 }
 
-# ── Dimensiones exactas extraídas del PPT (pulgadas) ─────────────────────────
 PLACEHOLDER_DIMS = {
-    "img_cmg":                        (11.16, 5.55),  # Slide 1
-    "img_spread":                     (5.95, 4.41),   # Slide 2
-    "img_inyeccion_bess":             (6.02, 4.15),   # Slide 2
-    "img_evolucion_vertimientos":     (6.02, 3.97),   # Slide 2
-    "img_dia_tipico":                 (10.74, 5.95),  # Slide 3
-    "img_inyecciones_vertimientos":   (5.25, 4.94),   # Slide 3
+    "img_cmg":                        (11.16, 5.55),
+    "img_spread":                     (5.95,  4.41),
+    "img_inyeccion_bess":             (6.02,  4.15),
+    "img_evolucion_vertimientos":     (6.02,  3.97),
+    "img_dia_tipico":                 (10.74, 5.95),
+    "img_inyecciones_vertimientos":   (5.25,  4.94),
+    "tabla_top":                      (4.49,  3.68),   
 }
 
 # DPI para todos los gráficos
-TARGET_DPI = 150  
+TARGET_DPI = 300  
 def get_figsize(placeholder_name: str, dpi: int = TARGET_DPI) -> tuple[float, float]:
     """
     Retorna (width_in, height_in) exactas del placeholder.

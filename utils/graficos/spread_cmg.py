@@ -23,6 +23,12 @@ def graficar_spread_cmg(df_spread, out_path, muted_dict, grid_alpha, grid_lw, fo
     fs_leg    = round(8  * font_scale)
 
     columnas = {"nombre_cmg", "horas_solares", "horas_no_solares"}
+    rename_columnas={
+        "Barra crucero 220kV": "Norte",
+        "Barra Alto Jahuel 500kV": "Centro",
+        "Barra Puerto Montt 220kV":"Sur"
+    }
+    df_spread["nombre_cmg"] = df_spread["nombre_cmg"].replace(rename_columnas)
     faltantes = columnas - set(df_spread.columns)
     if faltantes:
         raise ValueError(f"Faltan columnas: {sorted(faltantes)}")
