@@ -15,23 +15,25 @@ PLACEHOLDER_IMG_MAP = {
 
 # ── Dimensiones exactas extraídas del PPT (pulgadas) ─────────────────────────
 PLACEHOLDER_DIMS = {
-    "img_cmg":                        (11.02, 7.85),  # Slide 1
-    "img_spread":                     (5.95,  4.29),  # Slide 2
-    "img_inyeccion_bess":             (6.02,  4.15),  # Slide 2
-    "img_evolucion_vertimientos":     (5.77,  3.97),  # Slide 2
+    "img_cmg":                        (11.16, 5.55),  # Slide 1
+    "img_spread":                     (5.95, 4.41),   # Slide 2
+    "img_inyeccion_bess":             (6.02, 4.15),   # Slide 2
+    "img_evolucion_vertimientos":     (6.02, 3.97),   # Slide 2
     "img_dia_tipico":                 (10.74, 5.95),  # Slide 3
-    "img_inyecciones_vertimientos":   (5.25,  4.94),  # Slide 3
+    "img_inyecciones_vertimientos":   (5.25, 4.94),   # Slide 3
 }
 
-
-def get_figsize(placeholder_name: str) -> tuple[float, float]:
-    """Retorna (width_in, height_in) para usar como figsize en matplotlib."""
+# DPI para todos los gráficos
+TARGET_DPI = 150  
+def get_figsize(placeholder_name: str, dpi: int = TARGET_DPI) -> tuple[float, float]:
+    """
+    Retorna (width_in, height_in) exactas del placeholder.
+    Con este figsize + el dpi indicado, la imagen sale en los píxeles
+    exactos del espacio en PPT — sin escalado.
+    """
     dims = PLACEHOLDER_DIMS.get(placeholder_name)
     if dims is None:
-        raise ValueError(
-            f"'{placeholder_name}' no tiene dimensiones registradas. "
-            f"Si está dentro de un grupo, extráelo primero del grupo en PowerPoint."
-        )
+        raise ValueError(f"'{placeholder_name}' no tiene dimensiones registradas.")
     return dims
 
 
