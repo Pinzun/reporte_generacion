@@ -1,3 +1,23 @@
+# Ignorar archivos sensibles
+.env
+
+# Ignorar datos procesados y crudos
 /data/processed
 /data/raw/db
-.env
+
+# Ignorar cachés de Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Ignorar archivos de entorno virtual
+.venv/
+venv/
+env/
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar archivos temporales de sistema
+.DS_Store
+Thumbs.db
