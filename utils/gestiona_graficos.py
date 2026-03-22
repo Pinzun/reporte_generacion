@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from utils.inserta_texto_ppt import insertar_top_vertimiento
+from utils.config_loader import get_config
 #IMPORTACIÓN FUNCIONES GRÁFICOS
 from .graficos.cmg_mapa import graficar_cmg_con_mapa, generar_mapa_regiones
 from .graficos.distribucion_vertimientos import graficar_boxplot_vertimientos_con_total
@@ -19,49 +20,33 @@ from .graficos.helpers import _setup_theme
 # CONSTANTES GLOBALES DE ESTILO
 # ══════════════════════════════════════════════════════════════════════════════
 
-FONT_FAMILY  = "Candara"
-FONT_COLOR   = "#003366"
-GRID_ALPHA   = 0.18
-GRID_LW      = 0.7
-EDGE_COLOR   = "#D0D5DD"
-LEGEND_ALPHA = 0.9
+_cfg = get_config()
+_viz = _cfg["visualizacion"]
+
+FONT_FAMILY  = _viz["font_family"]
+FONT_COLOR   = _viz["font_color"]
+GRID_ALPHA   = _viz["grid_alpha"]
+GRID_LW      = _viz["grid_lw"]
+EDGE_COLOR   = _viz["edge_color"]
+LEGEND_ALPHA = _viz["legend_alpha"]
 
 # Paleta Seaborn Muted — orden fijo para consistencia entre gráficos
-MUTED = {
-    "c1": "#9EC8E8",   # Azul pizarra   — año reciente / serie principal
-    "c2": "#F4B89A",   # Naranja tostado — año anterior / serie secundaria
-    "c3": "#A8DDA5",   # Verde salvia
-    "c4": "#E8A5A5",   # Rojo arcilla
-    "c5": "#C4A8D4",   # Violeta suave
-    "c6": "#C4A882",   # Café rosado
-}
+MUTED = _viz["paleta"]
 
 # Colores específicos por tecnología (día típico — paleta propia clara)
-COLOR_TECNOLOGIA = {
-    "Solar":          "#F6C48E",
-    "Eólica":         "#A8D5BA",
-    "Hidro":          "#8EC5FF",
-    "Geotérmica":     "#D9C2A3",
-    "Térmica":        "#C9C2E6",
-    "BESS Inyección": "#D96C6C",
-    "BESS Retiro":    "#6FA8DC",
-}
+COLOR_TECNOLOGIA = _viz["colores_tecnologia"]
 
-#SHP_REGIONES = r"C:\Users\pinzunza\OneDrive - Ministerio de Energia\Escritorio\escritorio desrodenado\capas\Comunas\COMUNAS_NACIONAL.shp"
 SHP_REGIONES = Path(os.environ["SHP_COMUNAS"])
 # Verificar que existe
 if SHP_REGIONES.exists():
     print(f"SHP encontrado: {SHP_REGIONES}")
 else:
     print("⚠️  Archivo no encontrado, revisar variable de entorno")
-    
+
 BAR_POINTS = {
-    "Barra crucero 200kV":       {"lon": -69.5677773900849, "lat": -22.27773471974709},
-    "Barra Pan de Azucar 220kV": {"lon": -71.100,           "lat": -29.900},
-    "Barra Quillota 220kV":      {"lon": -71.260,           "lat": -32.880},
-    "Barra Alto Jahuel 500kV":   {"lon": -70.630,           "lat": -33.720},
-    "Barra Puerto Montt 220kV":  {"lon": -72.940,           "lat": -41.470},
-    "Barra Charrua 500kV":       {"lon": -72.940,           "lat": -41.470},}
+    nombre: {"lon": coords["lon"], "lat": coords["lat"]}
+    for nombre, coords in _cfg["barras"]["coordenadas"].items()
+}
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ORQUESTADOR 
@@ -83,19 +68,20 @@ def generar_graficas(
     gx_real,
     gx_real_comparacion,
     outdir="outputs",
-    font_scale=1.5,
-    dpi=TARGET_DPI,
+    font_scale=None,
+    dpi=None,
 ):
+
+    if font_scale is None:
+        font_scale = _viz["font_scale"]
+    if dpi is None:
+        dpi = _viz["dpi"]
 
     os.makedirs(outdir, exist_ok=True)
     _setup_theme(font_dict=FONT_COLOR, font_family_dict=FONT_FAMILY, grid_alph=GRID_ALPHA,
                  grid_lw=GRID_LW, edge_color=EDGE_COLOR, legend_alpha=LEGEND_ALPHA)
 
-    rename_map = {
-        "CRUCERO_______220": "Barra crucero 220kV",
-        "AJAHUEL_______500": "Barra Alto Jahuel 500kV",
-        "P.MONTT_______220": "Barra Puerto Montt 220kV",
-    }
+    rename_map = _cfg["barras"]["nombres"]
 
     # ── 1) CMG con mapa ───────────────────────────────────────────────────────
     gdf_reg = generar_mapa_regiones(SHP_REGIONES)

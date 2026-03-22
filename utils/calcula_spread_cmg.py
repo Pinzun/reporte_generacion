@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from utils.config_loader import get_config
 
 
 def spread_cmg(df: pd.DataFrame) -> pd.DataFrame:
@@ -35,9 +36,9 @@ def spread_cmg(df: pd.DataFrame) -> pd.DataFrame:
 
     df_work["hora"] = df_work["fecha_hora"].dt.hour
 
-    # Supuesto: horas solares entre 08:00 y 19:59
+    _hs = get_config()["consultas"]["horas_solares"]
     df_work["bloque_horario"] = np.where(
-        (df_work["hora"] >= 8) & (df_work["hora"] < 20),
+        (df_work["hora"] >= _hs["inicio"]) & (df_work["hora"] < _hs["fin"]),
         "horas_solares",
         "horas_no_solares"
     )

@@ -1,32 +1,20 @@
 # utils/inserta_graficos_ppt.py
 from pptx import Presentation
 from pathlib import Path
+from utils.config_loader import get_config
 
+_cfg = get_config()
 
-PLACEHOLDER_IMG_MAP = {
-    "img_cmg":                      "cmg.png",
-    "img_dia_tipico":               "gx_tipico.png",
-    "img_spread":                   "spread_cmg.png",
-    "img_inyecciones_vertimientos": "inyec_vert.png",
-    "img_inyeccion_bess":           "inyecciones_bess.png",
-    "img_evolucion_vertimientos":   "evolucion_vertimiento.png",
-    "tabla_top":                    "tabla_top.png",   
-}
+PLACEHOLDER_IMG_MAP = _cfg["ppt"]["imagenes"]
 
 PLACEHOLDER_DIMS = {
-    "img_cmg":                        (11.16, 5.55),
-    "img_spread":                     (5.95,  4.41),
-    "img_inyeccion_bess":             (6.02,  4.15),
-    "img_evolucion_vertimientos":     (6.02,  3.97),
-    "img_dia_tipico":                 (10.74, 5.95),
-    "img_inyecciones_vertimientos":   (5.25,  4.94),
-    "tabla_top":                      (4.49,  3.68),   
+    k: tuple(v) for k, v in _cfg["ppt"]["dimensiones"].items()
 }
-TEXTO_CONTEXTO_PREFIJOS = ("titulo_", "y_", "x_")
 
+TEXTO_CONTEXTO_PREFIJOS = tuple(_cfg["ppt"]["texto_contexto_prefijos"])
 
 # DPI para todos los gráficos
-TARGET_DPI = 300  
+TARGET_DPI = _cfg["visualizacion"]["dpi"]
 def get_figsize(placeholder_name: str, dpi: int = TARGET_DPI) -> tuple[float, float]:
     """
     Retorna (width_in, height_in) exactas del placeholder.
@@ -52,7 +40,9 @@ def _buscar_shape_recursivo(shapes, nombre: str):
 
 
 
-def insertar_graficos_ppt(ppt_path: Path, img_dir: Path, margen: float = 0.5) -> None:
+def insertar_graficos_ppt(ppt_path: Path, img_dir: Path, margen: float = None) -> None:
+    if margen is None:
+        margen = _cfg["ppt"]["margen_pulgadas"]
     """
     margen: margen interior en pulgadas por cada lado.
     Inserta las imágenes dentro de los placeholders y trae al frente

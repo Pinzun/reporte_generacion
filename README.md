@@ -60,6 +60,7 @@ DB_PASSWORD=
 ```
 reporte_generacion/
 ├── main_reporte.py              # Punto de entrada principal
+├── config.json                  # Parámetros de configuración del reporte
 ├── placerholders.py             # Utilidad para explorar shapes del PPT
 ├── .env.example                 # Plantilla de variables de entorno
 ├── data/
@@ -71,7 +72,7 @@ reporte_generacion/
 │       ├── images/              # PNGs generados por el pipeline
 │       └── reports/             # PPT y PDF de salida
 └── utils/
-    ├── helpers.py               # Constantes y helpers de estilo
+    ├── config_loader.py         # Carga singleton de config.json
     ├── extrae_data.py           # Conexión MySQL y extracción de datos
     ├── gestiona_graficos.py     # Orquestador de gráficos
     ├── insercion_graficos.py    # Inserción de imágenes en PPT
@@ -99,10 +100,7 @@ reporte_generacion/
 
 ### Modo producción (extrae desde MySQL)
 
-```python
-# En main_reporte.py
-DEV = False
-```
+Editar `config.json` y establecer `dev_mode` en `false`, luego ejecutar:
 
 ```bash
 python main_reporte.py
@@ -110,23 +108,30 @@ python main_reporte.py
 
 ### Modo desarrollo (usa CSVs cacheados)
 
-```python
-# En main_reporte.py
-DEV = True
+```json
+// config.json
+"reporte": {
+  "dev_mode": true
+}
 ```
 
 En la primera ejecución en modo producción los CSVs se guardan automáticamente en `data/raw/db/`. Las ejecuciones siguientes en modo DEV los reutilizan sin conectarse a la base de datos.
 
 ### Parámetros de fecha
 
-Las fechas se configuran al final de `main_reporte.py`:
+Las fechas se configuran en `config.json`:
 
-```python
-fecha_inicio = "2025-01-01 00:00:00"
-fecha_fin    = "2025-12-31 23:45:00"
+```json
+"reporte": {
+  "fecha_estudio": "2025-12-31 23:45:00",
+  "meses_historico": 11,
+  "anios_comparacion": 1,
+  "fecha_comparacion_fija_inicio": "2022-01-01",
+  "fecha_comparacion_fija_fin": "2022-12-31"
+}
 ```
 
-El período de comparación se calcula automáticamente como un año antes.
+El período de estudio abarca desde `fecha_estudio - meses_historico` hasta `fecha_estudio`. El período de comparación se calcula automáticamente como `anios_comparacion` años antes.
 
 ---
 
@@ -181,31 +186,27 @@ Los textos dinámicos usan la sintaxis `{{kpis.nombre_kpi}}`. Los KPIs disponibl
 
 ## Estilo visual
 
-El reporte usa una paleta **Seaborn Muted** personalizada, consistente en todos los gráficos:
+El reporte usa una paleta **Seaborn Muted** personalizada, consistente en todos los gráficos. Los colores, fuente y parámetros visuales se definen en `config.json` bajo la clave `visualizacion`:
 
-| Variable      | Valor     | Uso                             |
-| ------------- | --------- | ------------------------------- |
-| `c1`          | `#9EC8E8` | Año reciente / serie principal  |
-| `c2`          | `#F4B89A` | Año anterior / serie secundaria |
-| `c3`          | `#A8DDA5` | Verde salvia                    |
-| `c4`          | `#E8A5A5` | Rojo arcilla                    |
-| `c5`          | `#C4A8D4` | Violeta suave                   |
-| `c6`          | `#C4A882` | Café rosado                     |
-| `FONT_COLOR`  | `#003366` | Texto y ejes                    |
-| `FONT_FAMILY` | `Candara` | Fuente global                   |
-
-El archivo de tema Excel `SeabornMuted.thmx` está disponible para aplicar la misma paleta en hojas de cálculo.
-
-### Escala de fuentes
-
-Todas las funciones de graficación aceptan el parámetro `font_scale` para ajustar el tamaño de fuente proporcionalmente:
-
-```python
-font_scale=1.0   # tamaño base
-font_scale=1.5   # 50% más grande
+```json
+"visualizacion": {
+  "font_family": "Candara",
+  "font_color": "#003366",
+  "dpi": 300,
+  "font_scale": 1.5,
+  "paleta": { "c1": "#9EC8E8", "c2": "#F4B89A", ... },
+  "colores_tecnologia": { "Solar": "#F6C48E", "Eólica": "#A8D5BA", ... }
+}
 ```
 
-Se controla globalmente desde `generar_graficas()`.
+| Clave   | Valor por defecto | Uso                             |
+| ------- | ----------------- | ------------------------------- |
+| `c1`    | `#9EC8E8`         | Año reciente / serie principal  |
+| `c2`    | `#F4B89A`         | Año anterior / serie secundaria |
+| `font_color` | `#003366`    | Texto y ejes                    |
+| `font_family` | `Candara`   | Fuente global                   |
+| `dpi`   | `300`             | Resolución de exportación       |
+| `font_scale` | `1.5`        | Escala de fuente en gráficos    |
 
 ---
 
@@ -220,6 +221,7 @@ Al finalizar la ejecución se generan dos archivos en `data/processed/reports/`:
 
 ## Notas de desarrollo
 
-- El modo `DEV = True` evita consultas a la base de datos usando los CSVs de la última extracción.
-- El DPI de exportación de imágenes es `300` por defecto, calibrado para que las imágenes encajen exactamente en los placeholders sin escalado.
+- Todos los parámetros configurables del reporte se centralizan en `config.json`. No es necesario editar código Python para cambios de fechas, modo de ejecución, colores o umbrales.
+- El modo `dev_mode: true` evita consultas a la base de datos usando los CSVs de la última extracción.
+- El DPI de exportación de imágenes está configurado en `config.json` (`visualizacion.dpi`), calibrado para que las imágenes encajen exactamente en los placeholders sin escalado.
 - El pipeline siempre parte desde `template_reporte.pptx` limpio — nunca acumula elementos de ejecuciones anteriores.

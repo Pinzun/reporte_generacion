@@ -1,11 +1,16 @@
 import pandas as pd
 from utils.db_utils import open_connection, close_connection
+from utils.config_loader import get_config
+
+_cfg = get_config()
 
 
 # =========================================================
 # Extrae datos de vertimientos
 # =========================================================
-def extrae_data_total_vertimientos(batch_size=4800000,fecha_inicio=None, fecha_fin=None,fecha_comparacion_inicio=None,fecha_comparacion_fin=None):
+def extrae_data_total_vertimientos(batch_size=None,fecha_inicio=None, fecha_fin=None,fecha_comparacion_inicio=None,fecha_comparacion_fin=None):
+    if batch_size is None:
+        batch_size = _cfg["consultas"]["batch_sizes"]["vertimientos"]
     #Extrae datos de estudio
     conn, ssh_client, stop_event = open_connection()
 
@@ -112,21 +117,22 @@ def extrae_data_total_vertimientos(batch_size=4800000,fecha_inicio=None, fecha_f
 # Extrae datos de CMG en lotes
 # =========================================================
 
-def extrae_data_cmg(batch_size=2400000,
+def extrae_data_cmg(batch_size=None,
                     fecha_inicio=None, fecha_fin=None,
                     fecha_inicio_comparacion=None, fecha_fin_comparacion=None):
+    if batch_size is None:
+        batch_size = _cfg["consultas"]["batch_sizes"]["cmg"]
     # -------------------------------
     # Descarga datos periodo de estudio
     # -------------------------------
     conn, ssh_client, stop_event = open_connection()
 
+    _barras = _cfg["consultas"]["cmg_barras"]
+    _barras_sql = ", ".join(f"'{b}'" for b in _barras)
+
     filtros_estudio = f"""
         FROM balance.cmg_barra
-        WHERE nombre_cmg IN (
-            'CRUCERO_______220',
-            'AJAHUEL_______500',
-            'P.MONTT_______220'
-        )
+        WHERE nombre_cmg IN ({_barras_sql})
         AND fecha_hora BETWEEN '{fecha_inicio}' AND '{fecha_fin}'
     """
 
@@ -163,11 +169,7 @@ def extrae_data_cmg(batch_size=2400000,
 
     filtros_comparacion = f"""
         FROM balance.cmg_barra
-        WHERE nombre_cmg IN (
-            'CRUCERO_______220',
-            'AJAHUEL_______500',
-            'P.MONTT_______220'
-        )
+        WHERE nombre_cmg IN ({_barras_sql})
         AND fecha_hora BETWEEN '{fecha_inicio_comparacion}' AND '{fecha_fin_comparacion}'
     """
 
@@ -207,7 +209,7 @@ def extrae_data_cmg(batch_size=2400000,
 # =========================================================
 # Extrae generación real en lotes
 # =========================================================
-def extrae_gx_real(batch_size=200000, fecha_inicio=None, fecha_fin=None,
+def extrae_gx_real(batch_size=None, fecha_inicio=None, fecha_fin=None,
                    fecha_inicio_comparacion=None, fecha_fin_comparacion=None):
     """
     Extrae datos de gx_real en dos rangos de fechas:
@@ -215,6 +217,8 @@ def extrae_gx_real(batch_size=200000, fecha_inicio=None, fecha_fin=None,
     - Rango de comparación (fecha_inicio_comparacion, fecha_fin_comparacion)
     Devuelve dos DataFrames.
     """
+    if batch_size is None:
+        batch_size = _cfg["consultas"]["batch_sizes"]["gx_real"]
 
     def _extraer(conn, fecha_ini, fecha_fin, batch_size):
         last_id = 0
@@ -268,9 +272,11 @@ def extrae_gx_real(batch_size=200000, fecha_inicio=None, fecha_fin=None,
 
 
 
-def extrae_gx_real_comparacion(batch_size=200000):  
-    fecha_inicio = "2022-01-01"
-    fecha_fin = "2022-12-31"   # ojo, había un ":" extra en tu string  
+def extrae_gx_real_comparacion(batch_size=None):
+    if batch_size is None:
+        batch_size = _cfg["consultas"]["batch_sizes"]["gx_real"]
+    fecha_inicio = _cfg["reporte"]["fecha_comparacion_fija_inicio"]
+    fecha_fin    = _cfg["reporte"]["fecha_comparacion_fija_fin"]
     conn, ssh_client, stop_event = open_connection()
 
     last_id = 0

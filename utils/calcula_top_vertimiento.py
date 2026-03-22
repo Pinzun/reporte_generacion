@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
+from utils.config_loader import get_config
 
-def top_vertimientos(df_vertimientos: pd.DataFrame, top=10, agrupar_por_periodo=False) -> pd.DataFrame:
+def top_vertimientos(df_vertimientos: pd.DataFrame, top=None, agrupar_por_periodo=False) -> pd.DataFrame:
+    if top is None:
+        top = get_config()["reporte"]["top_n_vertimientos"]
     """
     Calcula el vertimiento total por central (y opcionalmente por periodo) 
     y devuelve el top N de los que más han vertido.

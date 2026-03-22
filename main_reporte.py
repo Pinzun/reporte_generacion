@@ -5,6 +5,7 @@ from pathlib import Path
 from datetime import datetime
 import pandas as pd
 
+from utils.config_loader import get_config
 from utils.extrae_data import (
     extrae_data_total_vertimientos,
     extrae_data_cmg,
@@ -23,20 +24,22 @@ import shutil
 # Config
 # -----------------------
 
-BASE_DIR = Path(__file__).parent
-TEMPL_DIR = BASE_DIR / "data" / "raw"/ "templates"
-ASSETS_DIR = BASE_DIR / "assets"
-IMG_DIR = BASE_DIR / "data" / "processed" / "images"
-OUT_DIR = BASE_DIR / "data" / "processed" / "reports"
-CSV_DIR = BASE_DIR / "data" / "processed" / "csv"
+_cfg = get_config()
+
+BASE_DIR  = Path(__file__).parent
+TEMPL_DIR = BASE_DIR / _cfg["rutas"]["templates"]
+ASSETS_DIR = BASE_DIR / _cfg["rutas"]["assets"]
+IMG_DIR   = BASE_DIR / _cfg["rutas"]["imagenes"]
+OUT_DIR   = BASE_DIR / _cfg["rutas"]["reportes"]
+CSV_DIR   = BASE_DIR / _cfg["rutas"]["csv"]
 
 PPT_PATH = OUT_DIR / "reporte_generacion.pptx"
 PDF_PATH = OUT_DIR / "reporte_generacion.pdf"
 
-PDF_NAME = "reporte.pdf"
-DEV = True 
-GENERAR_PLANTILLA =True
-FECHA_ESTUDIO = "2025-12-31 23:45:00" 
+PDF_NAME          = "reporte.pdf"
+DEV               = _cfg["reporte"]["dev_mode"]
+GENERAR_PLANTILLA = _cfg["reporte"]["generar_plantilla"]
+FECHA_ESTUDIO     = _cfg["reporte"]["fecha_estudio"]
 
 
 # -----------------------
@@ -55,7 +58,9 @@ def fmt_float(x, nd=2):
     except Exception:
         return "—"
 
-def df_to_html_table(df, numeric_cols=None, max_rows=30):
+def df_to_html_table(df, numeric_cols=None, max_rows=None):
+    if max_rows is None:
+        max_rows = get_config()["reporte"]["max_filas_tabla_html"]
     """
     Convierte DF a HTML (pandas) y marca columnas numéricas con class 'num'
     para alineación a la derecha via CSS.
@@ -391,13 +396,14 @@ if __name__ == "__main__":
     # Fechas originales como string
     fecha_fin = FECHA_ESTUDIO
     # Convertir a datetime
-    fecha_fin = pd.to_datetime(fecha_fin)
-    fecha_inicio = fecha_fin - pd.DateOffset(months=11)
+    fecha_fin    = pd.to_datetime(fecha_fin)
+    fecha_inicio = fecha_fin - pd.DateOffset(months=_cfg["reporte"]["meses_historico"])
     fecha_inicio = pd.to_datetime(fecha_inicio)
 
-    # Generar fechas de comparación (un año antes)
-    fecha_comparacion_inicio = fecha_inicio - pd.DateOffset(years=1)
-    fecha_comparacion_fin = fecha_fin - pd.DateOffset(years=1)
+    # Generar fechas de comparación (N años antes)
+    _anios = _cfg["reporte"]["anios_comparacion"]
+    fecha_comparacion_inicio = fecha_inicio - pd.DateOffset(years=_anios)
+    fecha_comparacion_fin    = fecha_fin    - pd.DateOffset(years=_anios)
 
     print("Fecha inicio:", fecha_inicio)
     print("Fecha fin:", fecha_fin)
