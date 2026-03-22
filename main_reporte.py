@@ -33,11 +33,10 @@ CSV_DIR = BASE_DIR / "data" / "processed" / "csv"
 PPT_PATH = OUT_DIR / "reporte_generacion.pptx"
 PDF_PATH = OUT_DIR / "reporte_generacion.pdf"
 
-
 PDF_NAME = "reporte.pdf"
-DEV = False 
+DEV = True 
 GENERAR_PLANTILLA =True
-FECHA_ESTUDIO = "2026-01-31 23:45:00"   
+FECHA_ESTUDIO = "2025-12-31 23:45:00" 
 
 
 # -----------------------
@@ -132,10 +131,10 @@ def main(fecha_inicio, fecha_fin, fecha_comparacion_inicio, fecha_comparacion_fi
         print("🔧 Modo desarrollo: cargando CSV locales...")
 
         #df_vertimientos_totales = pd.read_csv(ruta_vertimientos_csv)
-        df_vertimientos = pd.read_csv(ruta_vertimientos)
+        df_vertimientos = pd.read_csv(ruta_vertimientos, encoding="utf-8")
         df_vertimientos_comparacion=pd.read_csv(ruta_vertimientos_comparacion)
-        df_cmg_all = pd.read_csv(ruta_cmg)
-        df_cmg_all_comparacion=pd.read_csv(ruta_cmg_comparacion)
+        df_cmg_all = pd.read_csv(ruta_cmg, encoding="utf-8")
+        df_cmg_all_comparacion=pd.read_csv(ruta_cmg_comparacion, encoding="utf-8")
         df_gx_real = pd.read_csv(ruta_gx_real)
         df_gx_real_comparacion =pd.read_csv(ruta_gx_real_comparacion)
         df_gx_real_comparacion_2022 =pd.read_csv(ruta_gx_real_comparacion_2022)
@@ -291,8 +290,8 @@ def main(fecha_inicio, fecha_fin, fecha_comparacion_inicio, fecha_comparacion_fi
     # ── Vertimientos ──────────────────────────────────────────────
     vertimiento_total = float(df_vertimientos["vertimiento"].sum())
     print(df_top_vertimientos.head())      
-    empresa_vert_max = df_top_vertimientos["nombre_central"].iloc[0]
-    vert_empresa_vert_max = df_top_vertimientos["vertimiento"].iloc[0]   
+    empresa_vert_max = df_top_vertimientos["Nombre central"].iloc[0]
+    vert_empresa_vert_max = df_top_vertimientos["Reducción renovable"].iloc[0]   
 
     # ── CMG ───────────────────────────────────────────────────────
     cmg_mes  = df_cmg.groupby("fecha_hora", as_index=False)["CMG_PESO_KWH"].mean()
@@ -343,7 +342,7 @@ def main(fecha_inicio, fecha_fin, fecha_comparacion_inicio, fecha_comparacion_fi
     dia_spread_p_montt = _dia_max_spread("P.MONTT_______220")
 
 
-    empresa_vert_max = empresa_vert_max.replace("PFV", "").capitalize()
+    empresa_vert_max = empresa_vert_max.replace("PFV", "").replace("Pfv", "").strip().title()
 
     kpis = {
         # Vertimientos
@@ -364,7 +363,9 @@ def main(fecha_inicio, fecha_fin, fecha_comparacion_inicio, fecha_comparacion_fi
         "barra_cmg_spread_min":                   barra_spread_min,
         #Perfiles día típico
         "fecha_perfil_1":                         str(fecha_tipica),
-        "fecha_perfil_2":                         str(fecha_tipica_comparacion)
+        "fecha_perfil_2":                         str(fecha_tipica_comparacion),
+        "fecha_referencia_1": str(fecha_tipica),
+        "fecha_referencia_2": str(fecha_tipica_comparacion),
 
     }
 
@@ -391,7 +392,7 @@ if __name__ == "__main__":
     fecha_fin = FECHA_ESTUDIO
     # Convertir a datetime
     fecha_fin = pd.to_datetime(fecha_fin)
-    fecha_inicio = fecha_fin - pd.DateOffset(months=12)
+    fecha_inicio = fecha_fin - pd.DateOffset(months=11)
     fecha_inicio = pd.to_datetime(fecha_inicio)
 
     # Generar fechas de comparación (un año antes)

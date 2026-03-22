@@ -23,4 +23,12 @@ def top_vertimientos(df_vertimientos: pd.DataFrame, top=10, agrupar_por_periodo=
     df_top["nombre_central"] = df_top["nombre_central"].str.title()
     df_top["tipo"] = df_top["tipo"].str.title()
 
+    #Renombrar columnas 
+    rename_columnas = {
+        "nombre_central": "Nombre central",  # ← espacio al inicio eliminado
+        "tipo": "Tecnología",                # ← coma → dos puntos
+        "vertimiento": "Reducción renovable"
+    }
+    df_top = df_top.rename(columns=rename_columnas)
+
     return df_top

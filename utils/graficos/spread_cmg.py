@@ -17,16 +17,14 @@ from .helpers import _guardar_fig,_estilo_ax,_estilo_leyenda
 def graficar_spread_cmg(df_spread, out_path, muted_dict, grid_alpha, grid_lw, font_dict, font_family_dict, edge_color, legend_alpha, figsize=(6.04, 4.29), font_scale=1.0, dpi=300):
 
     # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_title  = round(12 * font_scale)
-    fs_label  = round(10 * font_scale)
-    fs_tick   = round(8  * font_scale)
+    fs_tick   = round(13  * font_scale)
     fs_leg    = round(8  * font_scale)
 
     columnas = {"nombre_cmg", "horas_solares", "horas_no_solares"}
-    rename_columnas={
-        "Barra crucero 220kV": "Norte",
-        "Barra Alto Jahuel 500kV": "Centro",
-        "Barra Puerto Montt 220kV":"Sur"
+    rename_columnas = {
+        "Barra crucero 220kV":      "Norte",
+        "Barra Alto Jahuel 500kV":  "Centro",
+        "Barra Puerto Montt 220kV": "Sur"
     }
     df_spread["nombre_cmg"] = df_spread["nombre_cmg"].replace(rename_columnas)
     faltantes = columnas - set(df_spread.columns)
@@ -46,18 +44,16 @@ def graficar_spread_cmg(df_spread, out_path, muted_dict, grid_alpha, grid_lw, fo
     ax.bar(x + width/2, df_plot["horas_no_solares"], width=width,
            label="Horas no solares", color=muted_dict["c1"], edgecolor="white", linewidth=0.8)
 
-    ax.set_title("CMG promedio: horas solares vs no solares", fontsize=fs_title,
-                 fontweight="bold", color=font_dict)
-    ax.set_xlabel("Barra CMG", fontsize=fs_label, color=font_dict)
-    ax.set_ylabel("CMG promedio ($/kWh)", fontsize=fs_label, color=font_dict)
+    ax.set_xlabel("")       # ← eliminado
+    ax.set_ylabel("")       # ← eliminado
     ax.set_xticks(x)
     ax.set_xticklabels(df_plot["nombre_cmg"], rotation=35, ha="right", fontsize=fs_tick)
     ax.tick_params(axis="y", labelsize=fs_tick)
     _estilo_ax(ax, grid_alpha, grid_lw, font_dict)
 
-    leg = ax.legend(frameon=True, fontsize=fs_leg)
+    leg = ax.legend(bbox_to_anchor=(0.0, -0.51),frameon=True, fontsize=fs_leg,  ncol=2, loc="lower left")
     _estilo_leyenda(leg, font_dict=font_dict, font_family_dict=font_family_dict,
                     edge_color=edge_color, legend_alpha=legend_alpha)
 
-    fig.subplots_adjust(left=0.09, right=0.98, top=0.87, bottom=0.28)
+    fig.subplots_adjust(left=0.09, right=0.98, top=0.87, bottom=0.38)
     _guardar_fig(fig, out_path, dpi=dpi)

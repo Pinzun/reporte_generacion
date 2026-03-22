@@ -4,6 +4,11 @@ import pandas as pd
 from pathlib import Path
 import comtypes.client
 import os
+import time
+import comtypes.client
+import win32gui
+import win32process
+import psutil
 
 # ==========================================================
 # Helpers
@@ -33,6 +38,7 @@ def exportar_ppt_a_pdf(pptx_path, pdf_path):
         prs = powerpoint.Presentations.Open(pptx_path)
         prs.SaveAs(pdf_path, 32)  # 32 = ppSaveAsPDF
         prs.Close()
+        print(f"📄 PDF exportado: {pdf_path}")
     finally:
         powerpoint.Quit()
 
@@ -83,8 +89,13 @@ def insertar_top_vertimiento(ppt_path: Path,slide_idx, df_top_vertimiento=pd.Dat
 
 def insertar_periodo_estudio(ppt_path: Path, periodo_estudio: str):
     prs = Presentation(ppt_path)
-    # Recorre todas las slides y aplica la función
-    [set_textbox_text(slide, "periodo_estudio", periodo_estudio) for slide in prs.slides]
+    for slide in prs.slides:
+        for shape in slide.shapes:
+            if shape.name == "periodo_estudio":
+                # Solo reemplaza el Run 1 — preserva formato de ambos runs
+                para = shape.text_frame.paragraphs[0]
+                if len(para.runs) >= 2:
+                    para.runs[1].text = periodo_estudio
     prs.save(ppt_path)
 
 def insertar_texto_con_placeholders(ppt_path: Path, kpis: dict) -> None:

@@ -11,7 +11,7 @@ from .graficos.gx_tipico import graficar_gx_tipico
 from .graficos.spread_cmg import graficar_spread_cmg
 from utils.insercion_graficos import insertar_graficos_ppt, get_figsize, TARGET_DPI
 from .graficos.helpers import render_table_image
-
+from pathlib import Path
 #HELPER
 from .graficos.helpers import _setup_theme
 
@@ -47,8 +47,14 @@ COLOR_TECNOLOGIA = {
     "BESS Retiro":    "#6FA8DC",
 }
 
-SHP_REGIONES = r"C:\Users\pinzunza\OneDrive - Ministerio de Energia\Escritorio\escritorio desrodenado\capas\Comunas\COMUNAS_NACIONAL.shp"
-
+#SHP_REGIONES = r"C:\Users\pinzunza\OneDrive - Ministerio de Energia\Escritorio\escritorio desrodenado\capas\Comunas\COMUNAS_NACIONAL.shp"
+SHP_REGIONES = Path(os.environ["SHP_COMUNAS"])
+# Verificar que existe
+if SHP_REGIONES.exists():
+    print(f"SHP encontrado: {SHP_REGIONES}")
+else:
+    print("⚠️  Archivo no encontrado, revisar variable de entorno")
+    
 BAR_POINTS = {
     "Barra crucero 200kV":       {"lon": -69.5677773900849, "lat": -22.27773471974709},
     "Barra Pan de Azucar 220kV": {"lon": -71.100,           "lat": -29.900},
@@ -214,8 +220,8 @@ def generar_graficas(
 
 
     # ── 8) Tabla top vertimientos ─────────────────────────────────
-    df_top_vertimiento["nombre_central"] = df_top_vertimiento["nombre_central"].str.replace("Pfv", "", regex=False)
-    df_top_vertimiento["nombre_central"] = df_top_vertimiento["nombre_central"].str.replace("PFV", "", regex=False)
+    df_top_vertimiento["Nombre central"] = df_top_vertimiento["Nombre central"].str.replace("Pfv", "", regex=False)
+    df_top_vertimiento["Nombre central"] = df_top_vertimiento["Nombre central"].str.replace("PFV", "", regex=False)
 
     render_table_image(
         df=df_top_vertimiento,

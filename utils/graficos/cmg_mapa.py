@@ -10,6 +10,14 @@ import numpy as np
 from .helpers import _guardar_fig
 
 # ══════════════════════════════════════════════════════════════════════════════
+# DICCIONARIOS UTILES
+# ══════════════════════════════════════════════════════════════════════════════
+
+MESES_ES = ["", "Ene", "Feb", "Mar", "Abr", "May", "Jun",
+            "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 # MAPA DE REGIONES
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -46,9 +54,6 @@ def graficar_cmg_con_mapa(
 ):
     import calendar
 
-    # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_title  = round(11 * font_scale)
-    fs_label  = round(9  * font_scale)
     fs_tick   = round(8  * font_scale)
     fs_leg    = round(7  * font_scale)
     fs_leg_t  = round(8  * font_scale)
@@ -63,7 +68,7 @@ def graficar_cmg_con_mapa(
 
     if df_c.empty and df_comp.empty:
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, "Sin datos para gráfico CMG", ha="center", va="center", fontsize=fs_title)
+        ax.text(0.5, 0.5, "Sin datos para gráfico CMG", ha="center", va="center", fontsize=fs_tick)
         ax.axis("off")
         _guardar_fig(fig, out_path, dpi=dpi)
         return
@@ -118,23 +123,25 @@ def graficar_cmg_con_mapa(
 
     meses = np.arange(1, 13)
     ax.set_xticks(meses)
-    ax.set_xticklabels([calendar.month_abbr[m] for m in meses], fontsize=fs_tick)
+    ax.set_xticklabels([MESES_ES[m] for m in meses], fontsize=fs_tick)
     ax.set_xlim(1, 12)
-    ax.set_title("Costo marginal promedio por mes ($/kWh)", fontsize=fs_title, fontweight="bold")
-    ax.set_xlabel("")
-    ax.set_ylabel("CMG ($/kWh)", fontsize=fs_label)
+    ax.set_xlabel("")       # ← eliminado título eje X
+    ax.set_ylabel("")       # ← eliminado título eje Y
     ax.tick_params(axis="y", labelsize=fs_tick)
     ax.grid(False)
     ax.yaxis.grid(True, alpha=0.18, linewidth=0.8)
     ax.xaxis.grid(False)
     sns.despine(ax=ax)
 
+    # ── Mapa con fondo plomo ──────────────────────────────────────
     gdf_reg_plot = gdf_reg.sort_values("CUT_REG").reset_index(drop=True)
-    cmap = LinearSegmentedColormap.from_list("pastel_orange_blue", ["#F6B38E", "#8EC5FF"])
-    colors = [cmap(i) for i in np.linspace(0, 1, len(gdf_reg_plot))]
-    gdf_reg_plot["_color"] = colors
-    gdf_reg_plot.plot(ax=ax_map, color=gdf_reg_plot["_color"],
-                      edgecolor="white", linewidth=0.6, zorder=1)
+    gdf_reg_plot.plot(
+        ax=ax_map,
+        color="#B0B0B0",        # ← relleno plomo uniforme
+        edgecolor="white",
+        linewidth=0.6,
+        zorder=1
+    )
 
     rows = [{"nombre_cmg": b, "lon": bar_points[b]["lon"], "lat": bar_points[b]["lat"]}
             for b in barras if b in bar_points]
@@ -145,9 +152,9 @@ def graficar_cmg_con_mapa(
             crs="EPSG:4326"
         ).to_crs(gdf_reg.crs)
         for _, r in pts.iterrows():
-            ax_map.scatter(r.geometry.x, r.geometry.y, s=28, marker="o",
-                           color=color_map[r["nombre_cmg"]], edgecolor="white",
-                           linewidth=0.6, zorder=5)
+            ax_map.scatter(r.geometry.x, r.geometry.y, s=28, marker="o",  # ← tamaño original
+                            color=color_map[r["nombre_cmg"]], edgecolor="white",
+                            linewidth=0.6, zorder=5)
 
     minx, miny, maxx, maxy = gdf_reg.total_bounds
     dx, dy = maxx - minx, maxy - miny
@@ -168,7 +175,7 @@ def graficar_cmg_con_mapa(
         for b in barras
     ]
     leg1 = ax.legend(handles=handles_barras, title="Barras CMG", loc="lower left",
-                     fontsize=fs_leg, title_fontsize=fs_leg_t, frameon=True, ncol=2, borderaxespad=0.6)
+                     fontsize=fs_leg, title_fontsize=fs_leg_t, frameon=True, ncol=2,bbox_to_anchor=(0.0, -0.51), borderaxespad=0)
     leg1.get_frame().set_alpha(0.9)
     ax.add_artist(leg1)
 
@@ -176,9 +183,9 @@ def graficar_cmg_con_mapa(
         Line2D([0], [0], color="#667085", linewidth=1.8, linestyle="-",  label=anio_estudio),
         Line2D([0], [0], color="#667085", linewidth=1.5, linestyle="--", label=anio_comparacion),
     ]
-    leg2 = ax.legend(handles=handles_estilo, title="Período", loc="upper left",
-                     fontsize=fs_leg, title_fontsize=fs_leg_t, frameon=True, ncol=1, borderaxespad=0.6)
+    leg2 = ax.legend(handles=handles_estilo, title="Período", loc="lower left",
+                     fontsize=fs_leg, title_fontsize=fs_leg_t, frameon=True, ncol=1,bbox_to_anchor=(0.4, -0.537), borderaxespad=0.6)
     leg2.get_frame().set_alpha(0.9)
 
-    fig.subplots_adjust(left=0.08, right=0.98, top=0.84, bottom=0.24)
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.84, bottom=0.4) 
     _guardar_fig(fig, out_path, dpi=dpi)

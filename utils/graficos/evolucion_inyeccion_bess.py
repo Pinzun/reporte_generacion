@@ -14,9 +14,7 @@ def graficar_evolucion_inyeccion_bess(df_gx_real, df_gx_real_comparacion, muted_
                                        out_path, figsize=(5.90, 4.14), font_scale=1.0, dpi=300):
 
     # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_title  = round(12 * font_scale)
-    fs_label  = round(10  * font_scale)
-    fs_tick   = round(8  * font_scale)
+    fs_tick   = round(12  * font_scale)
     fs_leg    = round(8  * font_scale)
     fs_leg_t  = round(9  * font_scale)
     fs_annot  = round(7  * font_scale)
@@ -27,7 +25,7 @@ def graficar_evolucion_inyeccion_bess(df_gx_real, df_gx_real_comparacion, muted_
     if df.empty:
         fig, ax = plt.subplots(figsize=figsize)
         ax.text(0.5, 0.5, "Sin datos de inyección BESS", ha="center", va="center",
-                fontsize=fs_title, color=font_dict)
+                fontsize=fs_tick, color=font_dict)
         ax.axis("off")
         _guardar_fig(fig, out_path, dpi=dpi)
         return
@@ -59,16 +57,14 @@ def graficar_evolucion_inyeccion_bess(df_gx_real, df_gx_real_comparacion, muted_
 
     ax.set_xticks(x)
     ax.set_xticklabels([t.split("Q")[1] + "T" for t in trimestres], fontsize=fs_tick)
-    ax.set_xlabel("Trimestre", fontsize=fs_label, color=font_dict)
-    ax.set_title("Evolución trimestral de inyección BESS", fontsize=fs_title,
-                 fontweight="bold", color=font_dict)
-    ax.set_ylabel("Inyección (MWh)", fontsize=fs_label, color=font_dict)
+    ax.set_xlabel("")       # ← eliminado
+    ax.set_ylabel("")       # ← eliminado
     ax.tick_params(axis="y", labelsize=fs_tick)
     _estilo_ax(ax, grid_alpha, grid_lw, font_dict)
 
-    leg = ax.legend(title="Año", fontsize=fs_leg, title_fontsize=fs_leg_t,
-                    frameon=True, loc="upper left")
+    leg = ax.legend(bbox_to_anchor=(0.0, -0.51),title="Año", fontsize=fs_leg, title_fontsize=fs_leg_t,
+                    frameon=True, loc="lower left", ncol=2)
     _estilo_leyenda(leg, font_dict, font_family_dict, edge_color, legend_alpha)
 
-    fig.subplots_adjust(left=0.08, right=0.98, top=0.88, bottom=0.15)
+    fig.subplots_adjust(left=0.08, right=0.98, top=0.88, bottom=0.23)
     _guardar_fig(fig, out_path, dpi=dpi)

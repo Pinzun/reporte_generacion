@@ -22,6 +22,8 @@ PLACEHOLDER_DIMS = {
     "img_inyecciones_vertimientos":   (5.25,  4.94),
     "tabla_top":                      (4.49,  3.68),   
 }
+TEXTO_CONTEXTO_PREFIJOS = ("titulo_", "y_", "x_")
+
 
 # DPI para todos los gráficos
 TARGET_DPI = 300  
@@ -49,18 +51,21 @@ def _buscar_shape_recursivo(shapes, nombre: str):
     return None
 
 
+
 def insertar_graficos_ppt(ppt_path: Path, img_dir: Path, margen: float = 0.5) -> None:
     """
-    margen: margen interior en pulgadas por cada lado (default 0.15 in)
+    margen: margen interior en pulgadas por cada lado.
+    Inserta las imágenes dentro de los placeholders y trae al frente
+    todos los shapes de texto de contexto (títulos, ejes).
     """
-    from pptx.util import Inches
-
-    ppt_path = Path(ppt_path)
-    img_dir  = Path(img_dir)
-    prs      = Presentation(ppt_path)
-    margen_emu = int(margen * 914400)  # pulgadas → EMUs
+    ppt_path   = Path(ppt_path)
+    img_dir    = Path(img_dir)
+    prs        = Presentation(ppt_path)
+    margen_emu = int(margen * 914400)
 
     for slide_num, slide in enumerate(prs.slides, 1):
+
+        # ── Insertar imágenes ─────────────────────────────────────
         for nombre, archivo in PLACEHOLDER_IMG_MAP.items():
 
             shape = _buscar_shape_recursivo(slide.shapes, nombre)
@@ -72,15 +77,23 @@ def insertar_graficos_ppt(ppt_path: Path, img_dir: Path, margen: float = 0.5) ->
                 print(f"  ⚠️  Imagen no encontrada: {archivo} (slide {slide_num})")
                 continue
 
-            # Aplicar margen interior — reduce tamaño y desplaza para centrar
             slide.shapes.add_picture(
                 str(img_file),
-                left=shape.left     + margen_emu,
-                top=shape.top       + margen_emu,
-                width=shape.width   - margen_emu * 2,
+                left=shape.left    + margen_emu,
+                top=shape.top      + margen_emu,
+                width=shape.width  - margen_emu * 2,
                 height=shape.height - margen_emu * 2,
             )
             print(f"  ✅ {nombre} → {archivo} (slide {slide_num})")
+
+        # ── Traer al frente títulos y etiquetas de ejes ───────────
+        shapes_al_frente = [
+            shape for shape in slide.shapes
+            if any(shape.name.startswith(p) for p in TEXTO_CONTEXTO_PREFIJOS)
+        ]
+        for shape in shapes_al_frente:
+            shape._element.getparent().append(shape._element)
+            print(f"  ↑  '{shape.name}' traído al frente")
 
     prs.save(ppt_path)
     print(f"\nPPT guardado: {ppt_path}")

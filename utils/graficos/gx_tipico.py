@@ -16,10 +16,7 @@ def graficar_gx_tipico(df_dia_tipico, dia_tipico_comparacion,
                         out_path, figsize=(10.74, 5.02), font_scale=1.0, dpi=300):
 
     # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_title  = round(12 * font_scale)
-    fs_label  = round(10  * font_scale)
     fs_tick   = round(8  * font_scale)
-    fs_fecha  = round(8  * font_scale)
     fs_leg    = round(8  * font_scale)
     fs_leg_t  = round(9  * font_scale)
 
@@ -74,7 +71,7 @@ def graficar_gx_tipico(df_dia_tipico, dia_tipico_comparacion,
     def _dibujar_areas(ax, pivot, fecha_label):
         if pivot.empty or len(pivot.index) <= 1 or np.isclose(pivot.to_numpy().sum(), 0):
             ax.text(0.5, 0.5, "Sin datos suficientes", ha="center", va="center",
-                    fontsize=fs_title, color=font_dict)
+                    fontsize=fs_tick, color=font_dict)
             ax.axis("off")
             return
 
@@ -93,14 +90,9 @@ def graficar_gx_tipico(df_dia_tipico, dia_tipico_comparacion,
                          colors=[color_tecnologia.get(c, "#D9E2EC") for c in cols_neg],
                          alpha=0.95, linewidth=0.6)
 
-        ax.axhline(0, color=edge_color, linewidth=0.8)
-        ax.text(0.01, 1.13, fecha_label, transform=ax.transAxes,
-                fontsize=fs_fecha, color="#667085", ha="left", va="bottom",
-                fontstyle="italic", fontfamily=font_family_dict)
-        ax.set_title("Generación diaria típica por tecnología", fontsize=fs_title,
-                     fontweight="bold", pad=4, color=font_dict)
-        ax.set_xlabel("Hora del día", fontsize=fs_label, color=font_dict)
-        ax.set_ylabel("Generación (mWh)", fontsize=fs_label, color=font_dict)
+        ax.axhline(0, color=edge_color, linewidth=0.8)        
+        ax.set_xlabel("")       # ← eliminado
+        ax.set_ylabel("")       # ← eliminado
         _estilo_ax(ax, grid_alpha=grid_alpha, grid_lw=grid_lw, font_dict=font_dict)
         xticks = np.arange(0, 25, 4)
         ax.set_xticks(xticks)
@@ -114,7 +106,6 @@ def graficar_gx_tipico(df_dia_tipico, dia_tipico_comparacion,
     fig, (ax2, ax1) = plt.subplots(1, 2, figsize=figsize, sharey=True)
     _dibujar_areas(ax2, pivot_comp, f"Fecha de referencia: {fecha_tipica_comparacion}")
     _dibujar_areas(ax1, pivot_est,  f"Fecha de referencia: {fecha_tipica}")
-
 
     handles, labels = ax1.get_legend_handles_labels()
     if not handles:

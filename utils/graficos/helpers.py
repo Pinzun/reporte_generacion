@@ -148,7 +148,6 @@ def render_table_image(df, title, out_path, font_dict, font_family_dict, muted_d
     Renderiza un DataFrame como imagen PNG con el estilo visual del reporte.
     """
     # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_title  = round(11 * font_scale)
     fs_cell   = round(8  * font_scale)
 
     # ── Colores alineados con la paleta Muted ─────────────────────
@@ -172,9 +171,7 @@ def render_table_image(df, title, out_path, font_dict, font_family_dict, muted_d
     ax.axis("off")
     fig.patch.set_facecolor("none")
 
-    ax.set_title(title, fontsize=fs_title, fontweight="bold", color=font_dict,
-                 fontfamily=font_family_dict, pad=6, loc="center")
-
+    # ← título eliminado — viene de shape PPT titulo_tabla
     table = ax.table(
         cellText=df_show.values,
         colLabels=df_show.columns.tolist(),
@@ -198,5 +195,5 @@ def render_table_image(df, title, out_path, font_dict, font_family_dict, muted_d
             cell.set_text_props(color=font_dict, fontfamily=font_family_dict, fontsize=fs_cell)
 
     table.auto_set_column_width(col=list(range(ncols)))
-    fig.subplots_adjust(left=0.02, right=0.98, top=0.88, bottom=0.02)
+    fig.subplots_adjust(left=0.02, right=0.98, top=0.98, bottom=0.02)
     _guardar_fig(fig, out_path, dpi=dpi)

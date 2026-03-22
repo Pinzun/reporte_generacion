@@ -17,5 +17,5 @@ def explorar_ppt(ppt_path):
             print(f"  {shape.name:<30} | {ancho:.2f} x {alto:.2f} in")
 
 if __name__ == "__main__":
-    ppt_path = r"C:\Users\pinzunza\projectos_codigos\reporte_generacion\data\raw\templates\template_reporte.pptx"
-    explorar_ppt(ppt_path)
+    path=r"C:\Users\Pablo\OneDrive\Documents\Trabajo\proyectos\reporte_generacion\data\raw\templates\template_reporte.pptx"
+    explorar_ppt(path)
