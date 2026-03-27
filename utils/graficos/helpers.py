@@ -13,7 +13,11 @@ from pptx import Presentation
 
 
 def evolucion_inyeccion_bess(df_gx_real: pd.DataFrame, df_gx_real_comparacion: pd.DataFrame) -> pd.DataFrame:
-
+    print("Debug evolucion_inyeccion_bess")
+    print("gx_real")
+    print(df_gx_real.head())
+    print("df_gx_real_comparacion")
+    print(df_gx_real_comparacion.head())
     def _calcular_trimestral(df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
 
@@ -38,7 +42,17 @@ def evolucion_inyeccion_bess(df_gx_real: pd.DataFrame, df_gx_real_comparacion: p
     df_estudio     = _calcular_trimestral(df_gx_real)
     df_comparacion = _calcular_trimestral(df_gx_real_comparacion)
 
-    return pd.concat([df_estudio, df_comparacion], ignore_index=True)
+    print("df_estudio")
+    print(df_estudio.head())
+    print("df_comparacion")
+    print(df_comparacion.head())
+
+    df_estudio     = _calcular_trimestral(df_gx_real)
+    df_comparacion = _calcular_trimestral(df_gx_real_comparacion)
+
+    resultado = pd.concat([df_estudio, df_comparacion], ignore_index=True)
+    resultado["inyeccion_retiro"] = resultado["inyeccion_retiro"].astype(float)  # ← conversión
+    return resultado
 
 def evolucion_vertimiento(df_vertimientos: pd.DataFrame, df_vertimientos_comparacion: pd.DataFrame) -> pd.DataFrame:
 

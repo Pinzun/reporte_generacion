@@ -1,12 +1,12 @@
 {
   "reporte": {
-    "fecha_estudio": "2025-12-31 23:45:00",
+    "fecha_estudio": "2026-01",
     "meses_historico": 11,
     "anios_comparacion": 1,
-    "fecha_comparacion_fija_inicio": "2022-01-01",
-    "fecha_comparacion_fija_fin": "2022-12-31",
-    "dev_mode": true,
-    "generar_plantilla": true,
+    "fecha_comparacion_fija_inicio": "2022-01",
+    "fecha_comparacion_fija_fin": "2022-12",
+    "dev_mode": false,
+    "generar_plantilla": false,
     "top_n_vertimientos": 10,
     "max_filas_tabla_html": 30
   },
@@ -28,7 +28,7 @@
     "batch_sizes": {
       "vertimientos": 4800000,
       "cmg": 2400000,
-      "gx_real": 200000
+      "gx_real": 2400000
     },
     "horas_solares": {
       "inicio": 8,
@@ -74,24 +74,24 @@
         "lat": -22.27773471974709
       },
       "Barra Pan de Azucar 220kV": {
-        "lon": -71.100,
-        "lat": -29.900
+        "lon": -71.1,
+        "lat": -29.9
       },
       "Barra Quillota 220kV": {
-        "lon": -71.260,
-        "lat": -32.880
+        "lon": -71.26,
+        "lat": -32.88
       },
       "Barra Alto Jahuel 500kV": {
-        "lon": -70.630,
-        "lat": -33.720
+        "lon": -70.63,
+        "lat": -33.72
       },
       "Barra Puerto Montt 220kV": {
-        "lon": -72.940,
-        "lat": -41.470
+        "lon": -72.94,
+        "lat": -41.47
       },
       "Barra Charrua 500kV": {
-        "lon": -72.940,
-        "lat": -41.470
+        "lon": -72.94,
+        "lat": -41.47
       }
     }
   },
@@ -106,40 +106,16 @@
       "tabla_top": "tabla_top.png"
     },
     "dimensiones": {
-      "img_cmg": [
-        11.16,
-        5.55
-      ],
-      "img_spread": [
-        5.95,
-        4.41
-      ],
-      "img_inyeccion_bess": [
-        6.02,
-        4.15
-      ],
-      "img_evolucion_vertimientos": [
-        6.02,
-        3.97
-      ],
-      "img_dia_tipico": [
-        10.74,
-        5.95
-      ],
-      "img_inyecciones_vertimientos": [
-        5.25,
-        4.94
-      ],
-      "tabla_top": [
-        4.49,
-        3.68
-      ]
+      "img_cmg": [11.16, 5.55],
+      "img_spread": [5.95, 4.41],
+      "img_inyeccion_bess": [6.02, 4.15],
+      "img_evolucion_vertimientos": [6.02, 3.97],
+      "img_dia_tipico": [10.74, 5.95],
+      "img_inyecciones_vertimientos": [5.25, 4.94],
+      "tabla_top": [4.49, 3.68]
     },
     "margen_pulgadas": 0.5,
-    "texto_contexto_prefijos": [
-      "titulo_",
-      "y_",
-      "x_"
-    ]
-  }
+    "texto_contexto_prefijos": ["titulo_", "y_", "x_"]
+  },
+  "SHP_REGIONES": "C:\\Users\\pinzunza\\Downloads\\DPA_2023\\COMUNAS\\COMUNAS_v1.shp"
 }
