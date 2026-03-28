@@ -196,7 +196,7 @@ def main(
         )
         df_gx_real_comparacion_2022 = extrae_gx_real_comparacion()
 
-        df_gx_real.to_csv(ruta_gx_real,                  index=False, date_format="%Y-%m-%d %H:%M:%S", encoding="utf-8", sep=";")
+        df_gx_real.to_csv(ruta_gx_real,index=False, date_format="%Y-%m-%d %H:%M:%S", encoding="utf-8", sep=";")
         df_gx_real_comparacion.to_csv(ruta_gx_real_comparacion,      index=False, date_format="%Y-%m-%d %H:%M:%S", encoding="utf-8", sep=";")
         df_gx_real_comparacion_2022.to_csv(ruta_gx_real_comparacion_2022, index=False, date_format="%Y-%m-%d %H:%M:%S", encoding="utf-8", sep=";")
         print("📁 CSV GX real (simple) guardados.")

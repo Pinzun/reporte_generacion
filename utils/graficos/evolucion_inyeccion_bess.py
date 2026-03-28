@@ -54,6 +54,8 @@ def graficar_evolucion_inyeccion_bess(df_gx_real, df_gx_real_comparacion, muted_
         q_label = f"Q{q_num}"
         mask = (df["anio"] == anio) & (df["trimestre"] == q_label)
         sub = df[mask]
+        print(f"  _get_valor({anio}, Q{q_num}): {sub['inyeccion_retiro'].sum() if not sub.empty else 'SIN DATOS'}")
+
         return sub["inyeccion_retiro"].sum() if not sub.empty else None
 
     # ── Dibujar ───────────────────────────────────────────────────

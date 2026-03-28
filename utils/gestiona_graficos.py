@@ -38,7 +38,7 @@ LEGEND_ALPHA = _viz["legend_alpha"]
 MUTED            = _viz["paleta"]
 COLOR_TECNOLOGIA = _viz["colores_tecnologia"]
 
-shp_env = os.getenv("SHP_REGIONES")
+shp_env = os.getenv("SHP_COMUNAS")
 if shp_env:
     SHP_REGIONES = Path(shp_env)
     if SHP_REGIONES.exists():

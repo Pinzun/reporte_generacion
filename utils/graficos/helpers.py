@@ -3,21 +3,48 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import os
+import matplotlib.font_manager as fm
 from matplotlib.ticker import FuncFormatter 
 from pptx import Presentation
-
+from pathlib import Path
 
 # ══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ══════════════════════════════════════════════════════════════════════════════
 
 
+def _register_fonts(fonts_dir: str = None):
+    """
+    Registra todas las fuentes TTF/OTF de la carpeta fonts_dir
+    en el font manager de matplotlib.
+    Si fonts_dir es None usa data/raw/fonts relativo a este archivo.
+    """
+    if fonts_dir is None:
+        fonts_dir = Path(__file__).parent.parent.parent / "data" / "raw" / "fonts"
+    else:
+        fonts_dir = Path(fonts_dir)
+
+    if not fonts_dir.exists():
+        print(f"⚠️  Carpeta de fuentes no encontrada: {fonts_dir}")
+        return
+
+    fuentes_encontradas = list(fonts_dir.glob("*.ttf")) + list(fonts_dir.glob("*.otf"))
+
+    if not fuentes_encontradas:
+        print(f"⚠️  No se encontraron fuentes TTF/OTF en {fonts_dir}")
+        return
+
+    for font_path in fuentes_encontradas:
+        fm.fontManager.addfont(str(font_path))
+        print(f"  ✓ Fuente registrada: {font_path.name}")
+
+    # Limpiar caché para que matplotlib reconozca las nuevas fuentes
+    fm._load_fontmanager(try_read_cache=False)
+    print(f"Font manager recargado — {len(fuentes_encontradas)} fuentes registradas.")
+
+
 def evolucion_inyeccion_bess(df_gx_real: pd.DataFrame, df_gx_real_comparacion: pd.DataFrame) -> pd.DataFrame:
-    print("Debug evolucion_inyeccion_bess")
-    print("gx_real")
-    print(df_gx_real.head())
-    print("df_gx_real_comparacion")
-    print(df_gx_real_comparacion.head())
+
     def _calcular_trimestral(df: pd.DataFrame) -> pd.DataFrame:
         df = df.copy()
 
@@ -31,8 +58,8 @@ def evolucion_inyeccion_bess(df_gx_real: pd.DataFrame, df_gx_real_comparacion: p
             return pd.DataFrame(columns=["trimestre", "inyeccion_retiro", "anio"])
 
         df["fecha_hora"] = pd.to_datetime(df["fecha_hora"], errors="coerce")
-        df["trimestre"]  = df["fecha_hora"].dt.to_period("Q").astype(str)
-        df["anio"]       = df["fecha_hora"].dt.year.astype(str)  # ← año extraído del DF
+        df["trimestre"]  = "Q" + df["fecha_hora"].dt.quarter.astype(str)   # ← "Q1".."Q4"
+        df["anio"]       = df["fecha_hora"].dt.year.astype(int)             # ← int, no str
 
         return (
             df.groupby(["trimestre", "anio"], as_index=False)["inyeccion_retiro"]
@@ -42,43 +69,50 @@ def evolucion_inyeccion_bess(df_gx_real: pd.DataFrame, df_gx_real_comparacion: p
     df_estudio     = _calcular_trimestral(df_gx_real)
     df_comparacion = _calcular_trimestral(df_gx_real_comparacion)
 
-    print("df_estudio")
-    print(df_estudio.head())
-    print("df_comparacion")
-    print(df_comparacion.head())
-
-    df_estudio     = _calcular_trimestral(df_gx_real)
-    df_comparacion = _calcular_trimestral(df_gx_real_comparacion)
+    # Debug — eliminar en producción
+    print("Debug evolucion_inyeccion_bess")
+    print("df_estudio:\n",     df_estudio.head())
+    print("df_comparacion:\n", df_comparacion.head())
 
     resultado = pd.concat([df_estudio, df_comparacion], ignore_index=True)
-    resultado["inyeccion_retiro"] = resultado["inyeccion_retiro"].astype(float)  # ← conversión
+    resultado["inyeccion_retiro"] = resultado["inyeccion_retiro"].astype(float)
     return resultado
 
-def evolucion_vertimiento(df_vertimientos: pd.DataFrame, df_vertimientos_comparacion: pd.DataFrame) -> pd.DataFrame:
 
-    def _calcular_trimestral(df: pd.DataFrame) -> pd.DataFrame:
+def evolucion_vertimiento(df_vertimientos, df_vertimientos_comparacion):
+
+    def _calcular_trimestral(df: pd.DataFrame, tag="") -> pd.DataFrame:
         df = df.copy()
 
         if df.empty:
             return pd.DataFrame(columns=["trimestre", "vertimiento", "anio"])
 
-        df["periodo"]   = pd.to_datetime(df["periodo"], errors="coerce")
-        df["trimestre"] = df["periodo"].dt.to_period("Q").astype(str)
-        df["anio"]      = df["periodo"].dt.year.astype(str)
+        # Usar columnas anio/mes directas si están disponibles (vienen de hora_mensual)
+        if "anio" in df.columns and "mes" in df.columns:
+            df["anio"]      = df["anio"].astype(int)
+            df["trimestre"] = "Q" + ((df["mes"].astype(int) - 1) // 3 + 1).astype(str)
+        else:
+            # Fallback: parsear desde periodo
+            df["periodo"]   = pd.to_datetime(df["periodo"], errors="coerce")
+            df["trimestre"] = "Q" + df["periodo"].dt.quarter.astype(str)
+            df["anio"]      = df["periodo"].dt.year.astype(int)
+
+        print(f"[{tag}] años únicos: {sorted(df['anio'].unique())}")
+        print(f"[{tag}] trimestres únicos: {sorted(df['trimestre'].unique())}")
 
         return (
             df.groupby(["trimestre", "anio"], as_index=False)["vertimiento"]
             .sum()
         )
-
-    df_estudio     = _calcular_trimestral(df_vertimientos)
-    df_comparacion = _calcular_trimestral(df_vertimientos_comparacion)
+    df_estudio     = _calcular_trimestral(df_vertimientos,            "estudio")
+    df_comparacion = _calcular_trimestral(df_vertimientos_comparacion, "comparacion")
 
     return pd.concat([df_estudio, df_comparacion], ignore_index=True)
 
 
-def _setup_theme(font_dict,font_family_dict,grid_alph,grid_lw,edge_color,legend_alpha):
+def _setup_theme(font_dict, font_family_dict, grid_alph, grid_lw, edge_color, legend_alpha):
     """Aplica el tema global Seaborn coherente con el estilo día típico."""
+    _register_fonts()
     plt.rcParams["font.family"] = font_family_dict
     sns.set_theme(
         style="whitegrid",
@@ -123,7 +157,7 @@ def _guardar_fig(fig, path, dpi=300):
             dpi=dpi,
             bbox_inches="tight",
             pad_inches=0.06,
-            transparent=True,   # ← fondo transparente
+            transparent=True,
         )
     plt.close(fig)
 
@@ -139,7 +173,7 @@ def _estilo_leyenda(leg, font_dict, font_family_dict, edge_color, legend_alpha):
         leg.get_title().set_fontfamily(font_family_dict)
 
 
-def _estilo_ax(ax, grid_alpha, grid_lw,font_dict):
+def _estilo_ax(ax, grid_alpha, grid_lw, font_dict):
     """Aplica estilo base consistente a un eje."""
     ax.grid(True,  axis="y", alpha=grid_alpha, linewidth=grid_lw, color="#CCCCCC")
     ax.grid(False, axis="x")
@@ -156,19 +190,16 @@ def listar_shapes(pptx_path, slide_idx):
         tipo = "TABLA" if shape.has_table else shape.shape_type
         print(f"  [{i}] nombre='{shape.name}'  tipo={tipo}")
 
+
 def render_table_image(df, title, out_path, font_dict, font_family_dict, muted_dict, edge_color,
                        figsize=(4.49, 3.68), font_scale=1.0, dpi=150, top=10):
-    """
-    Renderiza un DataFrame como imagen PNG con el estilo visual del reporte.
-    """
-    # ── Tamaños de fuente escalados ───────────────────────────────
-    fs_cell   = round(8  * font_scale)
+    """Renderiza un DataFrame como imagen PNG con el estilo visual del reporte."""
+    fs_cell = round(8 * font_scale)
 
-    # ── Colores alineados con la paleta Muted ─────────────────────
     COLOR_HEADER_BG = muted_dict["c1"]
     COLOR_HEADER_FG = font_dict
-    COLOR_ROW        = "#FFFFFF"
-    COLOR_BORDER     = edge_color
+    COLOR_ROW       = "#FFFFFF"
+    COLOR_BORDER    = edge_color
 
     df_show = df.copy()
     for col in df_show.columns:
@@ -185,7 +216,6 @@ def render_table_image(df, title, out_path, font_dict, font_family_dict, muted_d
     ax.axis("off")
     fig.patch.set_facecolor("none")
 
-    # ← título eliminado — viene de shape PPT titulo_tabla
     table = ax.table(
         cellText=df_show.values,
         colLabels=df_show.columns.tolist(),
