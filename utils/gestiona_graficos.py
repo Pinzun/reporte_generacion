@@ -38,7 +38,7 @@ LEGEND_ALPHA = _viz["legend_alpha"]
 MUTED            = _viz["paleta"]
 COLOR_TECNOLOGIA = _viz["colores_tecnologia"]
 
-shp_env = os.getenv("SHP_COMUNAS")
+shp_env = os.getenv("SHP_REGIONES")
 if shp_env:
     SHP_REGIONES = Path(shp_env)
     if SHP_REGIONES.exists():
@@ -57,6 +57,7 @@ BAR_POINTS = {
 # ORQUESTADOR
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def generar_graficas(
     # Vertimientos ventana simple
     df_vertimientos,
@@ -67,6 +68,7 @@ def generar_graficas(
     # CMg
     df_spread,
     df_cmg,
+    df_cmg_raw,
     df_cmg_comparacion,
     # Día típico
     df_dia_tipico,
@@ -107,8 +109,7 @@ def generar_graficas(
 
     # ── 1) CMG con mapa ───────────────────────────────────────────────────────
     gdf_reg = generar_mapa_regiones(SHP_REGIONES)
-
-    df_c = df_cmg.copy()
+    df_c = df_cmg_raw.copy()
     df_c["fecha_hora"] = pd.to_datetime(df_c["fecha_hora"], errors="coerce")
     df_c = df_c.sort_values("fecha_hora")
     df_c["nombre_cmg"] = df_c["nombre_cmg"].replace(rename_map)
@@ -118,11 +119,22 @@ def generar_graficas(
     df_com = df_com.sort_values("fecha_hora")
     df_com["nombre_cmg"] = df_com["nombre_cmg"].replace(rename_map)
 
+
+    print("=== DEBUG CMg ===")
+    print(f"df_c shape: {df_c.shape}")
+    print(f"df_c fecha_hora range: {df_c['fecha_hora'].min()} → {df_c['fecha_hora'].max()}")
+    print(f"df_com shape: {df_com.shape}")
+    print(f"df_com fecha_hora range: {df_com['fecha_hora'].min()} → {df_com['fecha_hora'].max()}")
+    print(f"df_com años únicos: {sorted(df_com['fecha_hora'].dt.year.unique())}")
+    print("=================")
+
     graficar_cmg_con_mapa(
         df_cmg=df_c, df_cmg_comparacion=df_com,
         gdf_reg=gdf_reg, bar_points=BAR_POINTS,
         out_path=os.path.join(outdir, "cmg.png"),
         figsize=get_figsize("img_cmg"),
+        mes_reporte=mes_reporte,
+        anio_reporte=anio_reporte,
         font_scale=font_scale, dpi=dpi,
     )
 

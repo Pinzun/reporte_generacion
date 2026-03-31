@@ -21,7 +21,7 @@ def graficar_evolucion_vertimiento(df_vertimientos, df_vertimientos_comparacion,
     COLOR_PREV    = muted_dict["c2"]
     COLOR_CURR    = muted_dict["c1"]
     COLOR_PARCIAL = "#e67e22"
-    ALPHA_PREV    = 0.55
+    ALPHA_PREV    = 0.45
     ALPHA_CURR    = 0.90
     ALPHA_PARC    = 0.90
 
@@ -139,7 +139,7 @@ def graficar_evolucion_vertimiento(df_vertimientos, df_vertimientos_comparacion,
     ax.annotate(
         f"* Valor acumulado a {mes_nombre[mes_reporte]} {anio_reporte}",
         xy=(0, 0), xycoords="axes fraction",
-        xytext=(0, -0.46), textcoords="axes fraction",
+        xytext=(0, -0.6), textcoords="axes fraction",
         fontsize=fs_annot, color=COLOR_PARCIAL, fontfamily=font_family_dict
     )
 

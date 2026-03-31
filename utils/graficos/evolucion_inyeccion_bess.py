@@ -154,7 +154,7 @@ def graficar_evolucion_inyeccion_bess(df_gx_real, df_gx_real_comparacion, muted_
     ax.annotate(
         f"* Valor acumulado a {mes_nombre[mes_reporte]} {anio_reporte}",
         xy=(0, 0), xycoords="axes fraction",
-        xytext=(0, -0.46), textcoords="axes fraction",
+        xytext=(0, -0.6), textcoords="axes fraction",
         fontsize=fs_annot, color=COLOR_PARCIAL, fontfamily=font_family_dict
     )
 

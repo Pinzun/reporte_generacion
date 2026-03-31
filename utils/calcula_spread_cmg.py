@@ -19,7 +19,7 @@ def spread_cmg(df: pd.DataFrame) -> pd.DataFrame:
     - nombre_cmg
     - CMG_PESO_KWH
     """
-    columnas_requeridas = {"fecha_hora", "nombre_cmg", "CMG_PESO_KWH"}
+    columnas_requeridas = {"fecha_hora", "nombre_cmg", "CMG_DOLAR_MWH"}
     faltantes = columnas_requeridas - set(df.columns)
     if faltantes:
         raise ValueError(f"Faltan columnas requeridas: {sorted(faltantes)}")
@@ -27,9 +27,9 @@ def spread_cmg(df: pd.DataFrame) -> pd.DataFrame:
     df_work = df.copy()
 
     df_work["fecha_hora"] = pd.to_datetime(df_work["fecha_hora"], errors="coerce")
-    df_work["CMG_PESO_KWH"] = pd.to_numeric(df_work["CMG_PESO_KWH"], errors="coerce")
+    df_work["CMG_PESO_KWH"] = pd.to_numeric(df_work["CMG_DOLAR_MWH"], errors="coerce")
 
-    df_work = df_work.dropna(subset=["fecha_hora", "nombre_cmg", "CMG_PESO_KWH"]).copy()
+    df_work = df_work.dropna(subset=["fecha_hora", "nombre_cmg", "CMG_DOLAR_MWH"]).copy()
 
     if df_work.empty:
         raise ValueError("No hay datos válidos para calcular spread_cmg.")

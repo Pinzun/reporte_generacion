@@ -87,5 +87,8 @@ def gx_ver_iny(df_gx_real: pd.DataFrame, df_vertimientos: pd.DataFrame) -> pd.Da
         "fecha_hora_limpio": "periodo",  
     })
 
-
+    df_resultado["inyeccion"]   = df_resultado["inyeccion"].astype(float)
+    df_resultado["vertimiento"] = df_resultado["vertimiento"].astype(float)
     return df_resultado
+
+

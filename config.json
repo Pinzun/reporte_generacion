@@ -106,41 +106,16 @@
       "tabla_top": "tabla_top.png"
     },
     "dimensiones": {
-      "img_cmg": [
-        11.16,
-        5.55
-      ],
-      "img_spread": [
-        5.95,
-        4.41
-      ],
-      "img_inyeccion_bess": [
-        6.02,
-        4.15
-      ],
-      "img_evolucion_vertimientos": [
-        6.02,
-        3.97
-      ],
-      "img_dia_tipico": [
-        10.74,
-        5.95
-      ],
-      "img_inyecciones_vertimientos": [
-        5.25,
-        4.94
-      ],
-      "tabla_top": [
-        4.49,
-        3.68
-      ]
+      "img_cmg": [11.16, 5.55],
+      "img_spread": [5.95, 4.41],
+      "img_inyeccion_bess": [6.02, 4.15],
+      "img_evolucion_vertimientos": [6.02, 3.97],
+      "img_dia_tipico": [10.74, 5.95],
+      "img_inyecciones_vertimientos": [5.25, 4.94],
+      "tabla_top": [4.49, 3.68]
     },
     "margen_pulgadas": 0.5,
-    "texto_contexto_prefijos": [
-      "titulo_",
-      "y_",
-      "x_"
-    ]
+    "texto_contexto_prefijos": ["titulo_", "y_", "x_"]
   },
-  "SHP_COMUNAS": "C:\\Users\\pinzunza\\Downloads\\DPA_2023\\COMUNAS\\COMUNAS_v1.shp"
+  "SHP_REGIONES": "C:\\Users\\pinzunza\\Downloads\\DPA_2023\\COMUNAS\\COMUNAS_v1.shp"
 }
